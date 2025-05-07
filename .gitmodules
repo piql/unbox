@@ -1,0 +1,9 @@
+[submodule "dep/unboxing"]
+	path = dep/unboxing
+	url = git@github.com:piql/unboxing
+[submodule "dep/afs"]
+	path = dep/afs
+	url = git@github.com:piql/afs
+[submodule "dep/stb"]
+	path = dep/stb
+	url = git@github.com:nothings/stb
