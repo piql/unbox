@@ -4,10 +4,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../dep/stb/stb_image.h"
 
-#include "../dep/afs/thirdparty/minixml/inc/mxml.h"
 #include "../dep/unboxing/tests/testutils/src/config_source_4k_controlframe_v7.h"
-#include "boxing/config.h"
-#include "boxing/unboxer.h"
+#include <boxing/config.h>
+#include <boxing/unboxer.h>
+#include <mxml.h>
 
 static const char *const boxing_unboxer_result_str[] = {
     "OK",
@@ -20,25 +20,6 @@ static const char *const boxing_unboxer_result_str[] = {
     "INPUT_DATA_ERROR",
     "SPLICING",
 };
-
-// TODO: fix XML pretty-printing
-// static int mxml_whitespace_save_depth = 0;
-// static char mxml_whitespace_save_text[256];
-// static const char *mxml_whitespace_save(mxml_node_t *xml, int where) {
-//   if (where == MXML_WS_BEFORE_OPEN) {
-//     memset(mxml_whitespace_save_text, ' ', mxml_whitespace_save_depth * 2);
-//     mxml_whitespace_save_text[mxml_whitespace_save_depth * 2] = '\0';
-//     return mxml_whitespace_save_text;
-//   } else if (where == MXML_WS_BEFORE_CLOSE) {
-//     memset(mxml_whitespace_save_text, ' ', mxml_whitespace_save_depth * 2);
-//     mxml_whitespace_save_text[mxml_whitespace_save_depth * 2] = '\0';
-//     return mxml_whitespace_save_text;
-//   } else if (where == MXML_WS_AFTER_OPEN)
-//     mxml_whitespace_save_depth++;
-//   else if (where == MXML_WS_AFTER_CLOSE)
-//     mxml_whitespace_save_depth--;
-//   return NULL;
-// }
 
 int main(void) {
   int status = EXIT_SUCCESS;
@@ -81,15 +62,13 @@ int main(void) {
               decode_result == BOXING_UNBOXER_OK) {
             // End char should be \n, set to '\0'
             ((char *)data.buffer)[data.size - 1] = '\0';
-            printf("%.*s\n", data.size, data.buffer);
-            mxml_node_t *xml =
-                mxmlLoadString(NULL, data.buffer, MXML_NO_CALLBACK);
+#if MXML_MAJOR_VERSION == 2
+            mxml_node_t *xml = mxmlLoadString(NULL, data.buffer, NULL);
+#else
+            mxml_node_t *xml = mxmlLoadString(NULL, NULL, data.buffer);
+#endif
             if (xml) {
-              const char *xml_str = mxmlSaveAllocString(xml, MXML_NO_CALLBACK);
-              if (xml_str) {
-                printf("%s\n", xml_str);
-                free((void *)xml_str);
-              }
+              // OK
               mxmlDelete(xml);
             } else {
               fprintf(stderr, "Failed to load xml\n");

@@ -2,8 +2,28 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#define MXML_INCLUDES " -Idep/afs/thirdparty/minixml/inc"
+#include "dev/build/util.c"
 
+#if 1
+#define CC "gcc"
+#define DEFINES ""
+#else
+#define CC "tcc -I$(dirname $(which tcc))/include -L$(dirname $(which tcc))"
+#define DEFINES " -DSTBI_NO_SIMD"
+#endif
+
+#if 1
+#define MXML_INCLUDES " -Idep/mxml"
+#define MXML_SOURCES                                                           \
+  " dep/mxml/mxml-attr.c"                                                      \
+  " dep/mxml/mxml-file.c"                                                      \
+  " dep/mxml/mxml-get.c"                                                       \
+  " dep/mxml/mxml-node.c"                                                      \
+  " dep/mxml/mxml-options.c"                                                   \
+  " dep/mxml/mxml-private.c"                                                   \
+  ""
+#else
+#define MXML_INCLUDES " -Idep/afs/thirdparty/minixml/inc"
 #define MXML_SOURCES                                                           \
   " dep/afs/thirdparty/minixml/src/mxml-attr.c"                                \
   " dep/afs/thirdparty/minixml/src/mxml-entity.c"                              \
@@ -12,6 +32,7 @@
   " dep/afs/thirdparty/minixml/src/mxml-private.c"                             \
   " dep/afs/thirdparty/minixml/src/mxml-string.c"                              \
   ""
+#endif
 
 #define UNBOXING_DEFINES " -DRAND_FILE='\"randfile\"'"
 
@@ -109,15 +130,17 @@
   system(cmd)
 
 #define COMPILE(sources, output)                                               \
-  SYSTEM_WITH_LOG("cc" UNBOXING_DEFINES UNBOXING_INCLUDES UNBOXING_SOURCES     \
-                      UNBOXING_LINK MXML_INCLUDES MXML_SOURCES " " sources     \
-                  " -fsanitize=address -o " output)
+  SYSTEM_WITH_LOG(                                                             \
+      CC DEFINES UNBOXING_DEFINES UNBOXING_INCLUDES UNBOXING_SOURCES           \
+          UNBOXING_LINK MXML_INCLUDES MXML_SOURCES                             \
+      " " sources " -g -fsanitize=address -o " output)
 
 #define RUN(exe) SYSTEM_WITH_LOG("./" exe)
 
 int main(void) {
   mkdir("out", 0755);
   mkdir("out/exe", 0755);
+  writeVSCodeInfo(MXML_INCLUDES UNBOXING_INCLUDES, DEFINES UNBOXING_DEFINES);
   COMPILE("src/unboxing_log.c src/main.c", "out/exe/unbox");
   RUN("out/exe/unbox");
   return EXIT_SUCCESS;

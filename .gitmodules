@@ -7,3 +7,6 @@
 [submodule "dep/stb"]
 	path = dep/stb
 	url = git@github.com:nothings/stb
+[submodule "dep/mxml"]
+	path = dep/mxml
+	url = git@github.com:trgwii/mxml
