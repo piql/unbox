@@ -7,9 +7,16 @@
 #if 1
 #define CC "gcc"
 #define DEFINES ""
-#else
-#define CC "tcc -I$(dirname $(which tcc))/include -L$(dirname $(which tcc))"
+#define CFLAGS " -g -fsanitize=address"
+#elif 1
+#define CC "tcc"
 #define DEFINES " -DSTBI_NO_SIMD"
+#define CFLAGS " -I$(dirname $(which tcc))/include -L$(dirname $(which tcc))"
+#else
+#define CC "zig cc"
+#define DEFINES ""
+#define TARGET_WINDOWS
+#define CFLAGS " -g -target x86_64-windows"
 #endif
 
 #if 1
@@ -132,16 +139,25 @@
 #define COMPILE(sources, output)                                               \
   SYSTEM_WITH_LOG(                                                             \
       CC DEFINES UNBOXING_DEFINES UNBOXING_INCLUDES UNBOXING_SOURCES           \
-          UNBOXING_LINK MXML_INCLUDES MXML_SOURCES                             \
-      " " sources " -g -fsanitize=address -o " output)
+          UNBOXING_LINK MXML_INCLUDES MXML_SOURCES " " sources CFLAGS          \
+                                                   " -o " output)
 
-#define RUN(exe) SYSTEM_WITH_LOG("./" exe)
+#define RUN(exe) SYSTEM_WITH_LOG(exe)
 
 int main(void) {
   mkdir("out", 0755);
   mkdir("out/exe", 0755);
+#ifdef TARGET_WINDOWS
+  SYSTEM_WITH_LOG("cp dep/mxml/vcnet/config.h dep/mxml/config.h");
+#else
+  SYSTEM_WITH_LOG("cd dep/mxml; ./configure");
+#endif
   writeVSCodeInfo(MXML_INCLUDES UNBOXING_INCLUDES, DEFINES UNBOXING_DEFINES);
   COMPILE("src/unboxing_log.c src/main.c", "out/exe/unbox");
-  RUN("out/exe/unbox");
+#ifdef TARGET_WINDOWS
+  RUN("wine out/exe/unbox");
+#else
+  RUN("./out/exe/unbox");
+#endif
   return EXIT_SUCCESS;
 }

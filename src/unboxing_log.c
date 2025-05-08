@@ -9,24 +9,15 @@ enum BoxingLogLevel {
   BoxingLogLevelAlways = 4,
 };
 
-static const char *coloredLogLevel(const enum BoxingLogLevel level) {
-  switch (level) {
-  case BoxingLogLevelInfo:
-    return "\x1b[36mINFO\x1b[0m   ";
-  case BoxingLogLevelWarning:
-    return "\x1b[33mWARNING\x1b[0m";
-  case BoxingLogLevelError:
-    return "\x1b[31mERROR\x1b[0m  ";
-  case BoxingLogLevelFatal:
-    return "\x1b[31mFATAL\x1b[0m  ";
-  case BoxingLogLevelAlways:
-    return "\x1b[35mDEBUG\x1b[0m  ";
-  }
-}
+static const char *boxing_log_level_str[] = {
+    "\x1b[36mINFO\x1b[0m   ", "\x1b[33mWARNING\x1b[0m",
+    "\x1b[31mERROR\x1b[0m  ", "\x1b[31mFATAL\x1b[0m  ",
+    "\x1b[35mDEBUG\x1b[0m  ",
+};
 
 void boxing_log(const enum BoxingLogLevel level,
                 const char *const restrict str) {
-  printf("%s %s\n", coloredLogLevel(level), str);
+  printf("%s %s\n", boxing_log_level_str[level], str);
 }
 
 void boxing_log_args(const enum BoxingLogLevel level,
@@ -36,5 +27,5 @@ void boxing_log_args(const enum BoxingLogLevel level,
   char buf[4096];
   const int len = vsnprintf(buf, sizeof(buf), fmt, args);
   va_end(args);
-  printf("%s %.*s\n", coloredLogLevel(level), len, buf);
+  printf("%s %.*s\n", boxing_log_level_str[level], len, buf);
 }
