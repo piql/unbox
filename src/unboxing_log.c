@@ -17,7 +17,7 @@ static const char *boxing_log_level_str[] = {
 
 void boxing_log(const enum BoxingLogLevel level,
                 const char *const restrict str) {
-  printf("%s %s\n", boxing_log_level_str[level], str);
+  fprintf(stderr, "%s %s\n", boxing_log_level_str[level], str);
 }
 
 void boxing_log_args(const enum BoxingLogLevel level,
@@ -27,5 +27,5 @@ void boxing_log_args(const enum BoxingLogLevel level,
   char buf[4096];
   const int len = vsnprintf(buf, sizeof(buf), fmt, args);
   va_end(args);
-  printf("%s %.*s\n", boxing_log_level_str[level], len, buf);
+  fprintf(stderr, "%s %.*s\n", boxing_log_level_str[level], len, buf);
 }

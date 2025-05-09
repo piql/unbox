@@ -28,6 +28,7 @@
   " dep/mxml/mxml-node.c"                                                      \
   " dep/mxml/mxml-options.c"                                                   \
   " dep/mxml/mxml-private.c"                                                   \
+  " dep/mxml/mxml-search.c"                                                    \
   ""
 #else
 #define MXML_INCLUDES " -Idep/afs/thirdparty/minixml/inc"
@@ -41,7 +42,7 @@
   ""
 #endif
 
-#define UNBOXING_DEFINES " -DRAND_FILE='\"randfile\"'"
+#define UNBOXING_DEFINES " -D_DEBUG -DRAND_FILE='\"randfile\"'"
 
 #define UNBOXING_LINK " -lm"
 
@@ -153,7 +154,7 @@ int main(void) {
   SYSTEM_WITH_LOG("cd dep/mxml; ./configure");
 #endif
   writeVSCodeInfo(MXML_INCLUDES UNBOXING_INCLUDES, DEFINES UNBOXING_DEFINES);
-  COMPILE("src/unboxing_log.c src/main.c", "out/exe/unbox");
+  COMPILE("src/main.c", "out/exe/unbox");
 #ifdef TARGET_WINDOWS
   RUN("wine out/exe/unbox");
 #else

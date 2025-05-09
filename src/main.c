@@ -9,6 +9,8 @@
 #include <boxing/unboxer.h>
 #include <mxml.h>
 
+#include "unboxing_log.c"
+
 static const char *const boxing_unboxer_result_str[] = {
     "OK",
     "METADATA_ERROR",
@@ -74,7 +76,8 @@ static enum UnboxerUnboxStatus UnboxerUnbox(Unboxer *unboxer,
   int height;
   unsigned char *img_data = stbi_load(image_path, &width, &height, NULL, 1);
   if (img_data) {
-    printf("width %d, height %d, data %p\n", width, height, img_data);
+    boxing_log_args(BoxingLogLevelAlways, "width %d, height %d, data %p", width,
+                    height, img_data);
     boxing_image8 image = {
         .width = (unsigned)width,
         .height = (unsigned)height,
@@ -92,9 +95,9 @@ static enum UnboxerUnboxStatus UnboxerUnbox(Unboxer *unboxer,
         &data, unboxer->metadata, &image, unboxer->unboxer, &extract_result,
         NULL, BOXING_METADATA_CONTENT_TYPES_CONTROLFRAME);
     free(img_data);
-    printf("unbox: extract: %s, decode: %s\n",
-           boxing_unboxer_result_str[extract_result],
-           boxing_unboxer_result_str[decode_result]);
+    boxing_log_args(BoxingLogLevelAlways, "unbox: extract: %s, decode: %s",
+                    boxing_unboxer_result_str[extract_result],
+                    boxing_unboxer_result_str[decode_result]);
     if (extract_result == BOXING_UNBOXER_OK &&
         decode_result == BOXING_UNBOXER_OK) {
       // End char should be \n, set to '\0'
@@ -107,6 +110,16 @@ static enum UnboxerUnboxStatus UnboxerUnbox(Unboxer *unboxer,
   return UnboxFailed;
 }
 
+static void log_mxml_err(void *cbdata, const char *message) {
+  boxing_log(BoxingLogLevelError, message);
+}
+
+static const char *getElementText(mxml_node_t *top, const char *element_name) {
+  mxml_node_t *element =
+      mxmlFindElement(top, top, element_name, NULL, NULL, MXML_DESCEND_ALL);
+  return element ? mxmlGetOpaque(element) : NULL;
+}
+
 int main(void) {
   int status = EXIT_SUCCESS;
   Unboxer unboxer;
@@ -114,28 +127,43 @@ int main(void) {
     char *data = NULL;
     size_t len = 0;
     if (UnboxerUnbox(&unboxer, "dat/000001.png", &data, &len) == UnboxOK) {
-      printf("%.*s\n", (int)len, data);
-#if MXML_MAJOR_VERSION == 2
-      mxml_node_t *xml = mxmlLoadString(NULL, data, NULL);
-#else
-      mxml_node_t *xml = mxmlLoadString(NULL, NULL, data);
-#endif
-      if (xml) {
-        // OK
-        mxmlDelete(xml);
+      mxml_options_t *options = mxmlOptionsNew();
+      if (options) {
+        mxmlOptionsSetTypeValue(options, MXML_TYPE_OPAQUE);
+        mxmlOptionsSetErrorCallback(options, log_mxml_err, NULL);
+        mxml_node_t *xml = mxmlLoadString(NULL, options, data);
+        if (xml) {
+          boxing_log(BoxingLogLevelAlways, "");
+          boxing_log_args(BoxingLogLevelAlways, "Reel ID: %s",
+                          getElementText(xml, "ReelId"));
+          boxing_log_args(BoxingLogLevelAlways, "Print Reel ID: %s",
+                          getElementText(xml, "PrintReelId"));
+          boxing_log_args(BoxingLogLevelAlways, "Title: %s",
+                          getElementText(xml, "Title"));
+          boxing_log_args(BoxingLogLevelAlways, "Description: %s",
+                          getElementText(xml, "Description"));
+          boxing_log_args(BoxingLogLevelAlways, "Creator: %s",
+                          getElementText(xml, "Creator"));
+          boxing_log_args(BoxingLogLevelAlways, "CreationDate: %s",
+                          getElementText(xml, "CreationDate"));
+          mxmlDelete(xml);
+        } else {
+          boxing_log(BoxingLogLevelError, "Failed to load xml");
+          status = EXIT_FAILURE;
+        }
+        mxmlOptionsDelete(options);
       } else {
-        fprintf(stderr, "Failed to load xml\n");
+        boxing_log(BoxingLogLevelError, "Failed to allocate mxml options");
         status = EXIT_FAILURE;
       }
-
       free(data);
     } else {
-      printf("Failed to unbox\n");
+      boxing_log(BoxingLogLevelError, "Failed to unbox");
       status = EXIT_FAILURE;
     }
     UnboxerDestroy(&unboxer);
   } else {
-    printf("Failed to initialize unboxer\n");
+    boxing_log(BoxingLogLevelError, "Failed to initialize unboxer");
     status = EXIT_FAILURE;
   }
   return status;
