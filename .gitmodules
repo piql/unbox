@@ -10,3 +10,6 @@
 [submodule "dep/mxml"]
 	path = dep/mxml
 	url = git@github.com:trgwii/mxml
+[submodule "dep/ivm_testdata"]
+	path = dep/ivm_testdata
+	url = git@github.com:immortalvm/testdata

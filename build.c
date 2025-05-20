@@ -19,7 +19,7 @@
 #define CFLAGS " -g -target x86_64-windows"
 #endif
 
-#if 1
+#if 0
 #define MXML_INCLUDES " -Idep/mxml"
 #define MXML_SOURCES                                                           \
   " dep/mxml/mxml-attr.c"                                                      \
@@ -36,8 +36,10 @@
   " dep/afs/thirdparty/minixml/src/mxml-attr.c"                                \
   " dep/afs/thirdparty/minixml/src/mxml-entity.c"                              \
   " dep/afs/thirdparty/minixml/src/mxml-file.c"                                \
+  " dep/afs/thirdparty/minixml/src/mxml-get.c"                                 \
   " dep/afs/thirdparty/minixml/src/mxml-node.c"                                \
   " dep/afs/thirdparty/minixml/src/mxml-private.c"                             \
+  " dep/afs/thirdparty/minixml/src/mxml-search.c"                              \
   " dep/afs/thirdparty/minixml/src/mxml-string.c"                              \
   ""
 #endif
@@ -134,7 +136,7 @@
   ""
 
 #define SYSTEM_WITH_LOG(cmd)                                                   \
-  puts("\x1b[90m" cmd "\x1b[0m");                                              \
+  printf("\x1b[90m%s\x1b[0m\n", cmd);                                          \
   system(cmd)
 
 #define COMPILE(sources, output)                                               \
@@ -145,7 +147,7 @@
 
 #define RUN(exe) SYSTEM_WITH_LOG(exe)
 
-int main(void) {
+int main(int argc, char *argv[]) {
   mkdir("out", 0755);
   mkdir("out/exe", 0755);
 #ifdef TARGET_WINDOWS
@@ -158,7 +160,12 @@ int main(void) {
 #ifdef TARGET_WINDOWS
   RUN("wine out/exe/unbox");
 #else
-  RUN("./out/exe/unbox");
+  char run_cmd[4096];
+  if (argc > 1)
+    snprintf(run_cmd, 4096, "%s %s", "./out/exe/unbox", argv[1]);
+  else
+    snprintf(run_cmd, 4096, "%s", "./out/exe/unbox");
+  RUN(run_cmd);
 #endif
   return EXIT_SUCCESS;
 }
