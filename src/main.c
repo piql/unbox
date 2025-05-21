@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -33,12 +34,13 @@ typedef struct {
 
 enum UnboxerInitStatus { UnboxerInitOK, UnboxerInitFailed };
 static enum UnboxerInitStatus UnboxerCreate(config_structure *config_structure,
-                                            Unboxer *out) {
+                                            bool is_raw, Unboxer *out) {
   enum UnboxerInitStatus status = UnboxerInitOK;
   boxing_config *config = boxing_config_create_from_structure(config_structure);
   if (config) {
     boxing_unboxer_parameters parameters;
     boxing_unboxer_parameters_init(&parameters);
+    parameters.is_raw = is_raw;
     if (parameters.pre_filter.coeff) {
       parameters.format = config;
       boxing_unboxer *unboxer = boxing_unboxer_create(&parameters);
@@ -96,7 +98,7 @@ UnboxerUnbox(Unboxer *unboxer, const char *image_path,
     enum boxing_unboxer_result decode_result = boxing_unboxer_unbox(
         &data, unboxer->metadata, &image, unboxer->unboxer, &extract_result,
         NULL, fallback_metadata_content_type);
-    free(img_data);
+    stbi_image_free(img_data);
     boxing_log_args(BoxingLogLevelAlways, "unbox: extract: %s, decode: %s",
                     boxing_unboxer_result_str[extract_result],
                     boxing_unboxer_result_str[decode_result]);
@@ -146,11 +148,13 @@ static void printReelXMLInformation(mxml_node_t *xml) {
 
 int main(int argc, char *argv[]) {
   int status = EXIT_SUCCESS;
+  bool is_raw = true;
   Unboxer unboxer;
-  if (UnboxerCreate(&config_source_v7, &unboxer) == UnboxerInitOK) {
+  if (UnboxerCreate(&config_source_v7, is_raw, &unboxer) == UnboxerInitOK) {
     char *data = NULL;
     size_t len = 0;
-    const char *const control_frame = argc > 1 ? argv[1] : "dep/ivm_testdata/reel/png/000001.png";
+    const char *const control_frame =
+        argc > 1 ? argv[1] : "dep/ivm_testdata/reel/png/000001.png";
     if (UnboxerUnbox(&unboxer, control_frame,
                      BOXING_METADATA_CONTENT_TYPES_CONTROLFRAME, &data,
                      &len) == UnboxOK) {
@@ -167,14 +171,15 @@ int main(int argc, char *argv[]) {
       if (xml) {
         printReelXMLInformation(xml);
         Unboxer data_unboxer;
-        if (UnboxerCreate(&config_source_4kv8, &data_unboxer) ==
+        if (UnboxerCreate(&config_source_4kv8, is_raw, &data_unboxer) ==
             UnboxerInitOK) {
           char *data = NULL;
           size_t len = 0;
-          if (UnboxerUnbox(&data_unboxer, "dep/ivm_testdata/reel/png/000556.png",
-                           BOXING_METADATA_CONTENT_TYPES_TOC, &data,
-                           &len) == UnboxOK) {
-            puts("OK");
+          if (UnboxerUnbox(
+                  &data_unboxer, "dep/ivm_testdata/reel/png/000556.png",
+                  BOXING_METADATA_CONTENT_TYPES_TOC, &data, &len) == UnboxOK) {
+            printf("%.*s\n", (int)len, data);
+            free(data);
           } else {
             boxing_log(BoxingLogLevelError, "Failed to unbox toc");
             status = EXIT_FAILURE;
