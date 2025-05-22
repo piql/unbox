@@ -12,11 +12,15 @@
 #define CC "tcc"
 #define DEFINES " -DSTBI_NO_SIMD"
 #define CFLAGS " -I$(dirname $(which tcc))/include -L$(dirname $(which tcc))"
+#elif 1
+#define CC "zig cc"
+#define DEFINES ""
+#define CFLAGS " -g -fsanitize=undefined"
 #else
 #define CC "zig cc"
 #define DEFINES ""
 #define TARGET_WINDOWS
-#define CFLAGS " -g -target x86_64-windows"
+#define CFLAGS " -g -fsanitize=undefined -target x86_64-windows"
 #endif
 
 #if 0

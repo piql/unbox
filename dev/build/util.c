@@ -60,7 +60,7 @@ static void writeIncDefJSONRows(FILE *f, const char *incdefs,
   fputs("        \"", f);
   writeAsJSONString(f, incdef, len);
   fputc('"', f);
-  while (incdef = nextIncDef(&it, &len)) {
+  while ((incdef = nextIncDef(&it, &len))) {
     fputs(",\n        \"", f);
     writeAsJSONString(f, incdef, len);
     fputc('"', f);
