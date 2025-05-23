@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <sys/stat.h>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "../dep/stb/stb_image.h"
 
@@ -9,8 +11,8 @@
 #include <boxing/config.h>
 #include <boxing/unboxer.h>
 #include <controldata.h>
-#include <tocdata_c.h>
 #include <mxml.h>
+#include <tocdata_c.h>
 
 #include "unboxing_log.c"
 
@@ -104,6 +106,35 @@ UnboxerUnbox(Unboxer *unboxer, uint8_t *image_data, uint32_t width,
   return UnboxFailed;
 }
 
+static bool writePathSegment(const char *const restrict input, char *scratch,
+                             const size_t scratch_len,
+                             unsigned *restrict cursor) {
+  const size_t input_len = strlen(input);
+  for (size_t i = 0; i < *cursor; i++)
+    scratch[i] = input[i];
+  size_t j;
+  for (j = *cursor; j < input_len; j++) {
+    if (input[j] == '/') {
+      *cursor = j + 1;
+      return true;
+    }
+    scratch[j] = input[j];
+  }
+  scratch[j] = '\0';
+  return false;
+}
+
+void ensurePathExists(const char *const restrict path) {
+  char buf[256] = {0};
+  unsigned cursor = 0;
+  for (;;) {
+    if (writePathSegment(path, buf, sizeof(buf), &cursor)) {
+      mkdir(buf, 0755);
+    } else
+      break;
+  }
+}
+
 static void printReelInformation(afs_administrative_metadata *md) {
   boxing_log(BoxingLogLevelAlways, "");
   boxing_log_args(BoxingLogLevelAlways, "Reel ID: %s", md->reel_id);
@@ -160,7 +191,52 @@ int main(int argc, char *argv[]) {
                                  &len) == UnboxOK) {
                   afs_toc_data *toc = afs_toc_data_create();
                   if (afs_toc_data_load_string(toc, data)) {
-                    printf("OK\n");
+                    afs_toc_data_reel *reel =
+                        afs_toc_data_reels_get_reel(toc->reels, 0);
+                    unsigned files = afs_toc_data_reel_file_count(reel);
+                    for (unsigned i = 0; i < files; i++) {
+                      afs_toc_file *file =
+                          afs_toc_data_reel_get_file_by_index(reel, i);
+                      printf("%d[%d]..%d[%d] %s\n", file->start_frame,
+                             file->start_byte, file->end_frame, file->end_byte,
+                             file->name);
+                      int data_frame_width;
+                      int data_frame_height;
+                      unsigned char *data_frame_data = stbi_load(
+                          "dep/ivm_testdata/reel/png/000557.png",
+                          &data_frame_width, &data_frame_height, NULL, 1);
+                      if (data_frame_data) {
+                        char *data = NULL;
+                        size_t len = 0;
+                        if (UnboxerUnbox(&data_unboxer, data_frame_data,
+                                         data_frame_width, data_frame_height,
+                                         BOXING_METADATA_CONTENT_TYPES_DATA,
+                                         &data, &len) == UnboxOK) {
+                          ensurePathExists(file->name);
+                          FILE *output_file = fopen(file->name, "w");
+                          if (output_file) {
+                            fwrite(data, 1, len, output_file);
+                            fclose(output_file);
+                          } else {
+                            boxing_log(BoxingLogLevelError,
+                                       "Failed to open output file");
+                            status = EXIT_FAILURE;
+                          }
+                          free(data);
+                        } else {
+                          boxing_log(BoxingLogLevelError,
+                                     "Failed to unbox data frame");
+                          status = EXIT_FAILURE;
+                        }
+                        stbi_image_free(data_frame_data);
+                      } else {
+                        boxing_log(BoxingLogLevelError,
+                                   "Failed to load data frame");
+                        status = EXIT_FAILURE;
+                      }
+                      if (status == EXIT_FAILURE)
+                        break;
+                    }
                     afs_toc_data_free(toc);
                   } else {
                     boxing_log(BoxingLogLevelError, "Failed to parse toc");
