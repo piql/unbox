@@ -6,46 +6,21 @@
 
 #if 1
 #define CC "gcc"
-#define DEFINES ""
+#define CC_DEFINES ""
 #define CFLAGS " -g -fsanitize=address"
 #elif 1
 #define CC "tcc"
-#define DEFINES " -DSTBI_NO_SIMD"
+#define CC_DEFINES " -DSTBI_NO_SIMD"
 #define CFLAGS " -I$(dirname $(which tcc))/include -L$(dirname $(which tcc))"
 #elif 1
 #define CC "zig cc"
-#define DEFINES ""
+#define CC_DEFINES ""
 #define CFLAGS " -g -fsanitize=undefined"
 #else
 #define CC "zig cc"
-#define DEFINES ""
+#define CC_DEFINES ""
 #define TARGET_WINDOWS
 #define CFLAGS " -g -fsanitize=undefined -target x86_64-windows"
-#endif
-
-#if 0
-#define MXML_INCLUDES " -Idep/mxml"
-#define MXML_SOURCES                                                           \
-  " dep/mxml/mxml-attr.c"                                                      \
-  " dep/mxml/mxml-file.c"                                                      \
-  " dep/mxml/mxml-get.c"                                                       \
-  " dep/mxml/mxml-node.c"                                                      \
-  " dep/mxml/mxml-options.c"                                                   \
-  " dep/mxml/mxml-private.c"                                                   \
-  " dep/mxml/mxml-search.c"                                                    \
-  ""
-#else
-#define MXML_INCLUDES " -Idep/afs/thirdparty/minixml/inc"
-#define MXML_SOURCES                                                           \
-  " dep/afs/thirdparty/minixml/src/mxml-attr.c"                                \
-  " dep/afs/thirdparty/minixml/src/mxml-entity.c"                              \
-  " dep/afs/thirdparty/minixml/src/mxml-file.c"                                \
-  " dep/afs/thirdparty/minixml/src/mxml-get.c"                                 \
-  " dep/afs/thirdparty/minixml/src/mxml-node.c"                                \
-  " dep/afs/thirdparty/minixml/src/mxml-private.c"                             \
-  " dep/afs/thirdparty/minixml/src/mxml-search.c"                              \
-  " dep/afs/thirdparty/minixml/src/mxml-string.c"                              \
-  ""
 #endif
 
 #define UNBOXING_DEFINES " -D_DEBUG -DRAND_FILE='\"randfile\"'"
@@ -139,31 +114,70 @@
   " dep/unboxing/thirdparty/reedsolomon/rs.c"                                  \
   ""
 
+#define MXML_INCLUDES " -Idep/afs/thirdparty/minixml/inc"
+#define MXML_SOURCES                                                           \
+  " dep/afs/thirdparty/minixml/src/mxml-attr.c"                                \
+  " dep/afs/thirdparty/minixml/src/mxml-entity.c"                              \
+  " dep/afs/thirdparty/minixml/src/mxml-file.c"                                \
+  " dep/afs/thirdparty/minixml/src/mxml-get.c"                                 \
+  " dep/afs/thirdparty/minixml/src/mxml-node.c"                                \
+  " dep/afs/thirdparty/minixml/src/mxml-private.c"                             \
+  " dep/afs/thirdparty/minixml/src/mxml-search.c"                              \
+  " dep/afs/thirdparty/minixml/src/mxml-string.c"                              \
+  ""
+
+#define AFS_INCLUDES                                                           \
+  " -Idep/afs/inc"                                                             \
+  ""
+
+#define AFS_SOURCES                                                            \
+  " dep/afs/src/administrativemetadata.c"                                      \
+  " dep/afs/src/controldata.c"                                                 \
+  " dep/afs/src/controlframe/boxingformat.c"                                   \
+  " dep/afs/src/framerange.c"                                                  \
+  " dep/afs/src/frameranges.c"                                                 \
+  " dep/afs/src/technicalmetadata.c"                                           \
+  " dep/afs/src/toc/previewlayoutdefinition.c"                                 \
+  " dep/afs/src/toc/previewlayoutdefinitions.c"                                \
+  " dep/afs/src/toc/previewsection.c"                                          \
+  " dep/afs/src/toc/previewsections.c"                                         \
+  " dep/afs/src/tocdata.c"                                                     \
+  " dep/afs/src/tocdatafilemetadata.c"                                         \
+  " dep/afs/src/tocdatafilemetadatasource.c"                                   \
+  " dep/afs/src/tocdatareel.c"                                                 \
+  " dep/afs/src/tocdatareels.c"                                                \
+  " dep/afs/src/tocfile.c"                                                     \
+  " dep/afs/src/tocfilepreview.c"                                              \
+  " dep/afs/src/tocfilepreviewpage.c"                                          \
+  " dep/afs/src/tocfiles.c"                                                    \
+  " dep/afs/src/tocmetadata.c"                                                 \
+  " dep/afs/src/tocmetadatasource.c"                                           \
+  " dep/afs/src/xmlutils.c"                                                    \
+  ""
+
 #define SYSTEM_WITH_LOG(cmd)                                                   \
   printf("\x1b[90m%s\x1b[0m\n", cmd);                                          \
   system(cmd)
 
-#define COMPILE(sources, output)                                               \
-  SYSTEM_WITH_LOG(                                                             \
-      CC DEFINES UNBOXING_DEFINES UNBOXING_INCLUDES UNBOXING_SOURCES           \
-          UNBOXING_LINK MXML_INCLUDES MXML_SOURCES " " sources CFLAGS          \
-                                                   " -o " output)
-
 #define RUN(exe) SYSTEM_WITH_LOG(exe)
+
+#define DEFINES CC_DEFINES UNBOXING_DEFINES
+#define INCLUDES UNBOXING_INCLUDES AFS_INCLUDES MXML_INCLUDES
+#define SOURCES UNBOXING_SOURCES AFS_SOURCES MXML_SOURCES
+
+#define COMPILE(sources, output)                                               \
+  SYSTEM_WITH_LOG(CC DEFINES INCLUDES SOURCES " " sources UNBOXING_LINK CFLAGS \
+                                              " -o " output)
 
 int main(int argc, char *argv[]) {
   mkdir("out", 0755);
   mkdir("out/exe", 0755);
+  writeVSCodeInfo(INCLUDES, DEFINES UNBOXING_DEFINES);
 #ifdef TARGET_WINDOWS
-  SYSTEM_WITH_LOG("cp dep/mxml/vcnet/config.h dep/mxml/config.h");
+  COMPILE("src/main.c", "out/exe/unbox.exe");
+  RUN("wine out/exe/unbox.exe");
 #else
-  SYSTEM_WITH_LOG("cd dep/mxml; ./configure");
-#endif
-  writeVSCodeInfo(MXML_INCLUDES UNBOXING_INCLUDES, DEFINES UNBOXING_DEFINES);
   COMPILE("src/main.c", "out/exe/unbox");
-#ifdef TARGET_WINDOWS
-  RUN("wine out/exe/unbox");
-#else
   char run_cmd[4096];
   if (argc > 1)
     snprintf(run_cmd, 4096, "%s %s", "./out/exe/unbox", argv[1]);

@@ -6,9 +6,10 @@
 #include "../dep/stb/stb_image.h"
 
 #include "../dep/unboxing/tests/testutils/src/config_source_4k_controlframe_v7.h"
-#include "../dep/unboxing/tests/testutils/src/config_source_4kv8.h"
 #include <boxing/config.h>
 #include <boxing/unboxer.h>
+#include <controldata.h>
+#include <tocdata_c.h>
 #include <mxml.h>
 
 #include "unboxing_log.c"
@@ -26,40 +27,33 @@ static const char *const boxing_unboxer_result_str[] = {
 };
 
 typedef struct {
-  boxing_config *config;
   boxing_unboxer_parameters parameters;
   boxing_unboxer *unboxer;
   boxing_metadata_list *metadata;
 } Unboxer;
 
 enum UnboxerInitStatus { UnboxerInitOK, UnboxerInitFailed };
-static enum UnboxerInitStatus UnboxerCreate(config_structure *config_structure,
-                                            bool is_raw, Unboxer *out) {
-  enum UnboxerInitStatus status = UnboxerInitOK;
-  boxing_config *config = boxing_config_create_from_structure(config_structure);
-  if (config) {
-    boxing_unboxer_parameters parameters;
-    boxing_unboxer_parameters_init(&parameters);
-    parameters.is_raw = is_raw;
-    if (parameters.pre_filter.coeff) {
-      parameters.format = config;
-      boxing_unboxer *unboxer = boxing_unboxer_create(&parameters);
-      if (unboxer) {
-        boxing_metadata_list *metadata = boxing_metadata_list_create();
-        if (metadata) {
-          *out = (Unboxer){
-              .config = config,
-              .parameters = parameters,
-              .unboxer = unboxer,
-              .metadata = metadata,
-          };
-          return UnboxerInitOK;
-        }
-        boxing_unboxer_free(unboxer);
+static enum UnboxerInitStatus UnboxerCreate(boxing_config *config, bool is_raw,
+                                            Unboxer *out) {
+  boxing_unboxer_parameters parameters;
+  boxing_unboxer_parameters_init(&parameters);
+  parameters.is_raw = is_raw;
+  if (parameters.pre_filter.coeff) {
+    parameters.format = config;
+    boxing_unboxer *unboxer = boxing_unboxer_create(&parameters);
+    if (unboxer) {
+      boxing_metadata_list *metadata = boxing_metadata_list_create();
+      if (metadata) {
+        *out = (Unboxer){
+            .parameters = parameters,
+            .unboxer = unboxer,
+            .metadata = metadata,
+        };
+        return UnboxerInitOK;
       }
-      boxing_unboxer_parameters_free(&parameters);
+      boxing_unboxer_free(unboxer);
     }
-    boxing_config_free(config);
+    boxing_unboxer_parameters_free(&parameters);
   }
   return UnboxerInitFailed;
 }
@@ -68,148 +62,149 @@ static void UnboxerDestroy(Unboxer *unboxer) {
   boxing_metadata_list_free(unboxer->metadata);
   boxing_unboxer_free(unboxer->unboxer);
   boxing_unboxer_parameters_free(&unboxer->parameters);
-  boxing_config_free(unboxer->config);
 }
 
 enum UnboxerUnboxStatus { UnboxOK, UnboxFailed };
 static enum UnboxerUnboxStatus
-UnboxerUnbox(Unboxer *unboxer, const char *image_path,
+UnboxerUnbox(Unboxer *unboxer, uint8_t *image_data, uint32_t width,
+             uint32_t height,
              boxing_metadata_content_types fallback_metadata_content_type,
              char **result, size_t *result_len) {
-  int width;
-  int height;
-  unsigned char *img_data = stbi_load(image_path, &width, &height, NULL, 1);
-  if (img_data) {
-    boxing_log_args(BoxingLogLevelAlways, "width %d, height %d, data %p", width,
-                    height, img_data);
-    boxing_image8 image = {
-        .width = (unsigned)width,
-        .height = (unsigned)height,
-        .is_owning_data = DFALSE,
-        .data = img_data,
-    };
-    int extract_result = BOXING_UNBOXER_OK;
-    gvector data = {
-        .buffer = NULL,
-        .size = 0,
-        .item_size = 1,
-        .element_free = NULL,
-    };
-    enum boxing_unboxer_result decode_result = boxing_unboxer_unbox(
-        &data, unboxer->metadata, &image, unboxer->unboxer, &extract_result,
-        NULL, fallback_metadata_content_type);
-    stbi_image_free(img_data);
-    boxing_log_args(BoxingLogLevelAlways, "unbox: extract: %s, decode: %s",
-                    boxing_unboxer_result_str[extract_result],
-                    boxing_unboxer_result_str[decode_result]);
-    if (extract_result == BOXING_UNBOXER_OK &&
-        decode_result == BOXING_UNBOXER_OK) {
-      // End char should be \n, set to '\0'
-      ((char *)data.buffer)[data.size - 1] = '\0';
-      *result = data.buffer;
-      *result_len = data.size - 1;
-      return UnboxOK;
-    }
-    if (data.buffer)
-      free(data.buffer);
+  boxing_log_args(BoxingLogLevelAlways, "width %d, height %d, data %p", width,
+                  height, image_data);
+  boxing_image8 image = {
+      .width = (unsigned)width,
+      .height = (unsigned)height,
+      .is_owning_data = DFALSE,
+      .data = image_data,
+  };
+  int extract_result = BOXING_UNBOXER_OK;
+  gvector data = {
+      .buffer = NULL,
+      .size = 0,
+      .item_size = 1,
+      .element_free = NULL,
+  };
+  enum boxing_unboxer_result decode_result = boxing_unboxer_unbox(
+      &data, unboxer->metadata, &image, unboxer->unboxer, &extract_result, NULL,
+      fallback_metadata_content_type);
+  boxing_log_args(BoxingLogLevelAlways, "unbox: extract: %s, decode: %s",
+                  boxing_unboxer_result_str[extract_result],
+                  boxing_unboxer_result_str[decode_result]);
+  if (extract_result == BOXING_UNBOXER_OK &&
+      decode_result == BOXING_UNBOXER_OK) {
+    // End char should be \n, set to '\0'
+    ((char *)data.buffer)[data.size - 1] = '\0';
+    *result = data.buffer;
+    *result_len = data.size - 1;
+    return UnboxOK;
   }
+  if (data.buffer)
+    free(data.buffer);
   return UnboxFailed;
 }
 
-static void log_mxml_err(void *cbdata, const char *message) {
-  boxing_log(BoxingLogLevelError, message);
-}
-
-static const char *getElementText(mxml_node_t *top, const char *element_name) {
-  mxml_node_t *element =
-#if MXML_MAJOR_VERSION == 2
-      mxmlFindElement(top, top, element_name, NULL, NULL, MXML_DESCEND);
-#else
-      mxmlFindElement(top, top, element_name, NULL, NULL, MXML_DESCEND_ALL);
-#endif
-  return element ? mxmlGetOpaque(element) : NULL;
-}
-
-static void printReelXMLInformation(mxml_node_t *xml) {
+static void printReelInformation(afs_administrative_metadata *md) {
   boxing_log(BoxingLogLevelAlways, "");
-  boxing_log_args(BoxingLogLevelAlways, "Reel ID: %s",
-                  getElementText(xml, "ReelId"));
-  boxing_log_args(BoxingLogLevelAlways, "Print Reel ID: %s",
-                  getElementText(xml, "PrintReelId"));
-  boxing_log_args(BoxingLogLevelAlways, "Title: %s",
-                  getElementText(xml, "Title"));
-  boxing_log_args(BoxingLogLevelAlways, "Description: %s",
-                  getElementText(xml, "Description"));
-  boxing_log_args(BoxingLogLevelAlways, "Creator: %s",
-                  getElementText(xml, "Creator"));
-  boxing_log_args(BoxingLogLevelAlways, "CreationDate: %s",
-                  getElementText(xml, "CreationDate"));
+  boxing_log_args(BoxingLogLevelAlways, "Reel ID: %s", md->reel_id);
+  boxing_log_args(BoxingLogLevelAlways, "Print Reel ID: %s", md->print_reel_id);
+  boxing_log_args(BoxingLogLevelAlways, "Title: %s", md->title);
+  boxing_log_args(BoxingLogLevelAlways, "Description: %s", md->description);
+  boxing_log_args(BoxingLogLevelAlways, "Creator: %s", md->creator);
+  boxing_log_args(BoxingLogLevelAlways, "Creation Date: %s", md->creation_date);
+  boxing_log(BoxingLogLevelAlways, "");
 }
 
 int main(int argc, char *argv[]) {
   int status = EXIT_SUCCESS;
-  bool is_raw = true;
-  Unboxer unboxer;
-  if (UnboxerCreate(&config_source_v7, is_raw, &unboxer) == UnboxerInitOK) {
-    char *data = NULL;
-    size_t len = 0;
-    const char *const control_frame =
-        argc > 1 ? argv[1] : "dep/ivm_testdata/reel/png/000001.png";
-    if (UnboxerUnbox(&unboxer, control_frame,
-                     BOXING_METADATA_CONTENT_TYPES_CONTROLFRAME, &data,
-                     &len) == UnboxOK) {
-      printf("%.*s\n", (int)len, data);
-#if MXML_MAJOR_VERSION == 2
-      mxml_node_t *xml = mxmlLoadString(NULL, data, MXML_OPAQUE_CALLBACK);
-#else
-      mxml_options_t *options = mxmlOptionsNew();
-      if (options) {
-        mxmlOptionsSetTypeValue(options, MXML_TYPE_OPAQUE);
-        mxmlOptionsSetErrorCallback(options, log_mxml_err, NULL);
-        mxml_node_t *xml = mxmlLoadString(NULL, options, data);
-#endif
-      if (xml) {
-        printReelXMLInformation(xml);
-        Unboxer data_unboxer;
-        if (UnboxerCreate(&config_source_4kv8, is_raw, &data_unboxer) ==
-            UnboxerInitOK) {
-          char *data = NULL;
-          size_t len = 0;
-          if (UnboxerUnbox(
-                  &data_unboxer, "dep/ivm_testdata/reel/png/000556.png",
-                  BOXING_METADATA_CONTENT_TYPES_TOC, &data, &len) == UnboxOK) {
-            printf("%.*s\n", (int)len, data);
-            free(data);
+  const char *const control_frame =
+      argc > 1 ? argv[1] : "dep/ivm_testdata/reel/png/000001.png";
+  int control_frame_width;
+  int control_frame_height;
+  unsigned char *control_frame_data = stbi_load(
+      control_frame, &control_frame_width, &control_frame_height, NULL, 1);
+  if (control_frame_data) {
+    boxing_config *config =
+        boxing_config_create_from_structure(&config_source_v7);
+    if (config) {
+      Unboxer unboxer;
+      if (UnboxerCreate(config,
+                        control_frame_width == 4096 &&
+                            control_frame_height == 2160,
+                        &unboxer) == UnboxerInitOK) {
+        char *data = NULL;
+        size_t len = 0;
+        if (UnboxerUnbox(&unboxer, control_frame_data, control_frame_width,
+                         control_frame_height,
+                         BOXING_METADATA_CONTENT_TYPES_CONTROLFRAME, &data,
+                         &len) == UnboxOK) {
+          afs_control_data *ctl = afs_control_data_create();
+          if (afs_control_data_load_string(ctl, data)) {
+            printReelInformation(ctl->administrative_metadata);
+            int frame_width;
+            int frame_height;
+            unsigned char *frame_data =
+                stbi_load("dep/ivm_testdata/reel/png/000556.png", &frame_width,
+                          &frame_height, NULL, 1);
+            if (frame_data) {
+              Unboxer data_unboxer;
+              if (UnboxerCreate(ctl->technical_metadata
+                                    ->afs_content_boxing_format->config,
+                                frame_width == 4096 && frame_height == 2160,
+                                &data_unboxer) == UnboxerInitOK) {
+                char *data = NULL;
+                size_t len = 0;
+                if (UnboxerUnbox(&data_unboxer, frame_data, frame_width,
+                                 frame_height,
+                                 BOXING_METADATA_CONTENT_TYPES_TOC, &data,
+                                 &len) == UnboxOK) {
+                  afs_toc_data *toc = afs_toc_data_create();
+                  if (afs_toc_data_load_string(toc, data)) {
+                    printf("OK\n");
+                    afs_toc_data_free(toc);
+                  } else {
+                    boxing_log(BoxingLogLevelError, "Failed to parse toc");
+                    status = EXIT_FAILURE;
+                  }
+                  free(data);
+                } else {
+                  boxing_log(BoxingLogLevelError, "Failed to unbox toc");
+                  status = EXIT_FAILURE;
+                }
+                UnboxerDestroy(&data_unboxer);
+              } else {
+                boxing_log(BoxingLogLevelError,
+                           "Failed to initialize data_unboxer");
+                status = EXIT_FAILURE;
+              }
+              stbi_image_free(frame_data);
+            } else {
+              boxing_log(BoxingLogLevelError, "Failed to load frame image");
+              status = EXIT_FAILURE;
+            }
+            afs_control_data_free(ctl);
           } else {
-            boxing_log(BoxingLogLevelError, "Failed to unbox toc");
+            boxing_log(BoxingLogLevelError, "Failed to load afs control data");
             status = EXIT_FAILURE;
           }
-          UnboxerDestroy(&data_unboxer);
+          free(data);
         } else {
-          boxing_log(BoxingLogLevelError, "Failed to initialize data_unboxer");
+          boxing_log(BoxingLogLevelError, "Failed to unbox");
           status = EXIT_FAILURE;
         }
-        mxmlDelete(xml);
+        UnboxerDestroy(&unboxer);
       } else {
-        boxing_log(BoxingLogLevelError, "Failed to load xml");
+        boxing_log(BoxingLogLevelError, "Failed to initialize unboxer");
         status = EXIT_FAILURE;
       }
-#if MXML_MAJOR_VERSION == 2
-#else
-        mxmlOptionsDelete(options);
-      } else {
-        boxing_log(BoxingLogLevelError, "Failed to allocate mxml options");
-        status = EXIT_FAILURE;
-      }
-#endif
-      free(data);
+      boxing_config_free(config);
     } else {
-      boxing_log(BoxingLogLevelError, "Failed to unbox");
+      boxing_log(BoxingLogLevelError, "Failed to load config_structure");
       status = EXIT_FAILURE;
     }
-    UnboxerDestroy(&unboxer);
+    stbi_image_free(control_frame_data);
   } else {
-    boxing_log(BoxingLogLevelError, "Failed to initialize unboxer");
+    boxing_log(BoxingLogLevelError, "Failed to read control frame");
     status = EXIT_FAILURE;
   }
   return status;
