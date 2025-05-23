@@ -129,7 +129,11 @@ void ensurePathExists(const char *const restrict path) {
   unsigned cursor = 0;
   for (;;) {
     if (writePathSegment(path, buf, sizeof(buf), &cursor)) {
+#ifdef _WIN32
+      mkdir(buf);
+#else
       mkdir(buf, 0755);
+#endif
     } else
       break;
   }
@@ -197,9 +201,9 @@ int main(int argc, char *argv[]) {
                     for (unsigned i = 0; i < files; i++) {
                       afs_toc_file *file =
                           afs_toc_data_reel_get_file_by_index(reel, i);
-                      printf("%d[%d]..%d[%d] %s\n", file->start_frame,
+                      printf("%d[%d]..%d[%d] %s (%s)\n", file->start_frame,
                              file->start_byte, file->end_frame, file->end_byte,
-                             file->name);
+                             file->name, file->checksum);
                       int data_frame_width;
                       int data_frame_height;
                       unsigned char *data_frame_data = stbi_load(
@@ -213,10 +217,17 @@ int main(int argc, char *argv[]) {
                                          BOXING_METADATA_CONTENT_TYPES_DATA,
                                          &data, &len) == UnboxOK) {
                           ensurePathExists(file->name);
-                          FILE *output_file = fopen(file->name, "w");
+                          FILE *output_file = fopen(file->name, "w+b");
                           if (output_file) {
-                            fwrite(data, 1, len, output_file);
+                            fwrite(data + file->start_byte, 1,
+                                   file->end_byte + 1 - file->start_byte,
+                                   output_file);
                             fclose(output_file);
+#ifndef _WIN32
+                            char path[4096];
+                            sprintf(path, "sha1sum %s", file->name);
+                            system(path);
+#endif
                           } else {
                             boxing_log(BoxingLogLevelError,
                                        "Failed to open output file");

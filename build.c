@@ -4,7 +4,11 @@
 
 #include "dev/build/util.c"
 
-#if 1
+#if 0
+#define CC "gcc"
+#define CC_DEFINES ""
+#define CFLAGS " -O3 -s"
+#elif 1
 #define CC "gcc"
 #define CC_DEFINES ""
 #define CFLAGS " -g -fsanitize=address"
