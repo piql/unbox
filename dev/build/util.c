@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,7 +9,8 @@ struct IncDefIterator {
   size_t len;
   size_t i;
 };
-static const char *nextIncDef(struct IncDefIterator *it, size_t *len_out) {
+static const char *nextIncDef(struct IncDefIterator *const it,
+                              size_t *const len_out) {
   size_t len = 0;
   const char *start = NULL;
   char found_dash_i = 0;
@@ -40,7 +42,7 @@ static const char *nextIncDef(struct IncDefIterator *it, size_t *len_out) {
   return NULL;
 }
 
-static void writeAsJSONString(FILE *f, const char *s, size_t len) {
+static void writeAsJSONString(FILE *f, const char *const s, const size_t len) {
   size_t i = 0;
   while (i < len) {
     const char c = s[i++];
@@ -51,20 +53,28 @@ static void writeAsJSONString(FILE *f, const char *s, size_t len) {
   }
 }
 
+static void writeRow(FILE *f, const char *const row, const size_t row_len,
+                     bool *const first) {
+  if (*first) {
+    *first = false;
+  } else {
+    fputs(",\n", f);
+  }
+  fputs("        \"", f);
+  writeAsJSONString(f, row, row_len);
+  fputc('"', f);
+}
+
 static void writeIncDefJSONRows(FILE *f, const char *incdefs,
                                 size_t incdefs_len, char flag) {
   struct IncDefIterator it = {
       .s = incdefs, .flag = flag, .len = incdefs_len, .i = 0};
   size_t len;
   const char *incdef = nextIncDef(&it, &len);
-  fputs("        \"", f);
-  writeAsJSONString(f, incdef, len);
-  fputc('"', f);
-  while ((incdef = nextIncDef(&it, &len))) {
-    fputs(",\n        \"", f);
-    writeAsJSONString(f, incdef, len);
-    fputc('"', f);
-  }
+  bool first = true;
+  writeRow(f, incdef, len, &first);
+  while ((incdef = nextIncDef(&it, &len)))
+    writeRow(f, incdef, len, &first);
 }
 
 static void writeVSCodeInfo(const char *includes, const char *defines) {

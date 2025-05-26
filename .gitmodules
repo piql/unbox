@@ -10,3 +10,6 @@
 [submodule "dep/ivm_testdata"]
 	path = dep/ivm_testdata
 	url = git@github.com:immortalvm/testdata
+[submodule "dep/rpmalloc"]
+	path = dep/rpmalloc
+	url = git@github.com:mjansson/rpmalloc

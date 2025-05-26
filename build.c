@@ -8,6 +8,7 @@
 #define CC "gcc"
 #define CC_DEFINES ""
 #define CFLAGS " -O3 -s"
+#define RELEASE
 #elif 1
 #define CC "gcc"
 #define CC_DEFINES ""
@@ -159,6 +160,10 @@
   " dep/afs/src/xmlutils.c"                                                    \
   ""
 
+#define RPMALLOC_SOURCES                                                       \
+  " dep/rpmalloc/rpmalloc/rpmalloc.c"                                          \
+  ""
+
 #define SYSTEM_WITH_LOG(cmd)                                                   \
   printf("\x1b[90m%s\x1b[0m\n", cmd);                                          \
   system(cmd)
@@ -167,7 +172,11 @@
 
 #define DEFINES CC_DEFINES UNBOXING_DEFINES
 #define INCLUDES UNBOXING_INCLUDES AFS_INCLUDES MXML_INCLUDES
+#ifdef RELEASE
+#define SOURCES RPMALLOC_SOURCES UNBOXING_SOURCES AFS_SOURCES MXML_SOURCES
+#else
 #define SOURCES UNBOXING_SOURCES AFS_SOURCES MXML_SOURCES
+#endif
 
 #define COMPILE(sources, output)                                               \
   SYSTEM_WITH_LOG(CC DEFINES INCLUDES SOURCES " " sources UNBOXING_LINK CFLAGS \
@@ -176,7 +185,9 @@
 int main(int argc, char *argv[]) {
   mkdir("out", 0755);
   mkdir("out/exe", 0755);
-  writeVSCodeInfo(INCLUDES, DEFINES UNBOXING_DEFINES);
+#ifndef RELEASE
+  writeVSCodeInfo(INCLUDES, DEFINES);
+#endif
 #ifdef TARGET_WINDOWS
   COMPILE("src/main.c", "out/exe/unbox.exe");
   RUN("wine out/exe/unbox.exe");

@@ -150,7 +150,16 @@ static void printReelInformation(afs_administrative_metadata *md) {
   boxing_log(BoxingLogLevelAlways, "");
 }
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 int main(int argc, char *argv[]) {
+#ifdef _WIN32
+  if (SetConsoleOutputCP(CP_UTF8) == 0) {
+    fprintf(stderr, "SetConsoleOutputCP failed!\n");
+  }
+#endif
   int status = EXIT_SUCCESS;
   const char *const control_frame =
       argc > 1 ? argv[1] : "dep/ivm_testdata/reel/png/000001.png";
