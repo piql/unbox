@@ -113,7 +113,7 @@ static bool writePathSegment(const char *const restrict input, char *scratch,
   for (size_t i = 0; i < *cursor; i++)
     scratch[i] = input[i];
   size_t j;
-  for (j = *cursor; j < input_len; j++) {
+  for (j = *cursor; j < input_len && j < scratch_len; j++) {
     if (input[j] == '/') {
       *cursor = j + 1;
       return true;
@@ -156,9 +156,7 @@ static void printReelInformation(afs_administrative_metadata *md) {
 
 int main(int argc, char *argv[]) {
 #ifdef _WIN32
-  if (SetConsoleOutputCP(CP_UTF8) == 0) {
-    fprintf(stderr, "SetConsoleOutputCP failed!\n");
-  }
+  SetConsoleOutputCP(CP_UTF8);
 #endif
   int status = EXIT_SUCCESS;
   const char *const control_frame =

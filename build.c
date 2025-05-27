@@ -12,7 +12,7 @@
 #elif 1
 #define CC "gcc"
 #define CC_DEFINES ""
-#define CFLAGS " -g -fsanitize=address"
+#define CFLAGS " -g -fsanitize=address -Wall -Wextra -Wpedantic -Werror -std=c99"
 #elif 1
 #define CC "tcc"
 #define CC_DEFINES " -DSTBI_NO_SIMD"
@@ -164,9 +164,7 @@
   " dep/rpmalloc/rpmalloc/rpmalloc.c"                                          \
   ""
 
-#define SYSTEM_WITH_LOG(cmd)                                                   \
-  printf("\x1b[90m%s\x1b[0m\n", cmd);                                          \
-  system(cmd)
+#define SYSTEM_WITH_LOG(cmd) (printf("\x1b[90m%s\x1b[0m\n", cmd), system(cmd))
 
 #define RUN(exe) SYSTEM_WITH_LOG(exe)
 
@@ -192,7 +190,9 @@ int main(int argc, char *argv[]) {
   COMPILE("src/main.c", "out/exe/unbox.exe");
   RUN("wine out/exe/unbox.exe");
 #else
-  COMPILE("src/main.c", "out/exe/unbox");
+  int cc_status = COMPILE("src/main.c", "out/exe/unbox");
+  if (cc_status != 0)
+    return cc_status;
   char run_cmd[4096];
   if (argc > 1)
     snprintf(run_cmd, 4096, "%s %s", "./out/exe/unbox", argv[1]);
