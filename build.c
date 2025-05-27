@@ -20,7 +20,7 @@
 #elif 1
 #define CC "zig cc"
 #define CC_DEFINES ""
-#define CFLAGS " -g -fsanitize=undefined"
+#define CFLAGS " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
 #else
 #define CC "zig cc"
 #define CC_DEFINES ""
