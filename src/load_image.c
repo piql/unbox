@@ -12,6 +12,23 @@ static void image_reset(void) { used = 0; }
 
 static void image_deinit(void) { free(memory); }
 
+#ifndef DEBUG_IMAGE_MEM_USAGE
+#define print_used()
+#else
+#include <stdio.h>
+static const char *full = "####################################################"
+                          "##########################";
+static const char *empty = "..................................................."
+                           "...........................";
+static void print_used(void) {
+  putchar('[');
+  unsigned frac = ((float)used / (float)MEMORY_SIZE) * (float)78;
+  printf("%.*s", frac, full);
+  printf("%.*s", 78 - frac, empty);
+  printf("] %9zu/%9zu\n", used, MEMORY_SIZE);
+}
+#endif
+
 static void image_init(void) {
   memory = malloc(MEMORY_SIZE);
   assert(memory);
@@ -19,8 +36,6 @@ static void image_init(void) {
 }
 
 static void *image_malloc(const size_t size) {
-  if (memory == NULL)
-    image_init();
   const size_t mask = 16u - 1u;
   const size_t start = (size_t)memory + used;
   const size_t aligned = (start + mask) & ~mask;
@@ -29,6 +44,7 @@ static void *image_malloc(const size_t size) {
   if (used + aligned_size > MEMORY_SIZE)
     return NULL;
   used += aligned_size;
+  print_used();
   return (void *)aligned;
 }
 
@@ -36,22 +52,23 @@ static void *image_realloc_sized(void *const p, const size_t old_size,
                                  const size_t new_size) {
   if (new_size == old_size)
     return p;
-  if (memory == NULL)
-    image_init();
   if ((size_t)memory + used - old_size == (size_t)p) {
     if (new_size < old_size) {
       used -= old_size - new_size;
+      print_used();
       return p;
     }
     if (used + new_size - old_size > MEMORY_SIZE)
       return NULL;
     used += new_size - old_size;
+    print_used();
     return p;
   }
   void *const moved = image_malloc(new_size);
   if (moved == NULL)
     return NULL;
   memcpy(moved, p, old_size);
+  print_used();
   return moved;
 }
 
@@ -83,7 +100,10 @@ Image loadImage(const char *const restrict path) {
     return (Image){.data = NULL, .width = 0, .height = 0};
   int width;
   int height;
-  image_reset();
+  if (memory == NULL)
+    image_init();
+  else
+    image_reset();
   unsigned char *data = stbi_load_from_memory(
       (unsigned char *)file.data, (int)file.size, &width, &height, NULL, 1);
   unmapFile(&file);
