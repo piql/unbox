@@ -13,8 +13,7 @@
    1. Read all frames in toc
    2. If metadata frame ID is wrong, try adjusting by reading the frame at the
       relevant offset, if ok update global offsets
-
-      1. If offsets fail, try reversing frame ID's
+      1. If offsets fail, scan every frame and update ID's based on metadata
       2. Repeat this logic for every frame reading
    3. Parse toc
    4. If reading or parsing fails, continue, otherwise break.

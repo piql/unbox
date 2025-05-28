@@ -12,7 +12,8 @@
 #elif 1
 #define CC "gcc"
 #define CC_DEFINES ""
-#define CFLAGS " -g -fsanitize=address -Wall -Wextra -Wpedantic -Werror -std=c99"
+#define CFLAGS                                                                 \
+  " -g -fsanitize=address -Wall -Wextra -Wpedantic -Werror -std=c99"
 #elif 1
 #define CC "tcc"
 #define CC_DEFINES " -DSTBI_NO_SIMD"
@@ -20,7 +21,8 @@
 #elif 1
 #define CC "zig cc"
 #define CC_DEFINES ""
-#define CFLAGS " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
+#define CFLAGS                                                                 \
+  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
 #else
 #define CC "zig cc"
 #define CC_DEFINES ""
@@ -198,7 +200,9 @@ int main(int argc, char *argv[]) {
     snprintf(run_cmd, 4096, "%s %s", "./out/exe/unbox", argv[1]);
   else
     snprintf(run_cmd, 4096, "%s", "./out/exe/unbox");
-  RUN(run_cmd);
+  if (RUN(run_cmd) == 0) {
+    RUN("rm -r tiff tiff.tar");
+  }
 #endif
   return EXIT_SUCCESS;
 }
