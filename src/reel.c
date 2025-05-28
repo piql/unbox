@@ -51,13 +51,13 @@ bool Reel_init(Reel *reel,
   if (!d)
     return false;
   struct dirent *ent;
-  while (ent = readdir(d)) {
+  while ((ent = readdir(d))) {
     size_t name_len = strlen(ent->d_name);
     char *name_end = ent->d_name + strlen(ent->d_name);
     long id = strtol(ent->d_name, &name_end, 10);
     if (name_end == ent->d_name)
       continue;
-    if (id >= 0 && id < countof(reel->frames)) {
+    if (id >= 0 && (unsigned long)id < countof(reel->frames)) {
       if (!grow((void **)&reel->string_pool, 1, &reel->string_pool_capacity,
                 reel->string_pool_count + name_len + 1)) {
         closedir(d);

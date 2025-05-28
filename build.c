@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-
 #if 0
 #define CC "gcc"
 #define CC_DEFINES ""
@@ -12,7 +11,7 @@
 #define CC "gcc"
 #define CC_DEFINES ""
 #define CFLAGS                                                                 \
-" -g -fsanitize=address -Wall -Wextra -Wpedantic -Werror -std=c99"
+  " -g -fsanitize=address -Wall -Wextra -Wpedantic -Werror -std=c99"
 #elif 0
 #define CC "tcc"
 #define CC_DEFINES " -DSTBI_NO_SIMD"
@@ -21,7 +20,7 @@
 #define CC "zig cc"
 #define CC_DEFINES ""
 #define CFLAGS                                                                 \
-" -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
+  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
 #else
 #define CC "zig cc"
 #define CC_DEFINES ""
@@ -197,9 +196,9 @@ int main(int argc, char *argv[]) {
   if (cc_status != 0)
     return cc_status;
 #ifdef TARGET_WINDOWS
-  if (RUN("wine out/exe/unbox.exe") == 0) {
+  if (RUN("wine out/exe/unbox.exe dep/ivm_testdata/reel/png") == 0) {
 #else
-  if (RUN("./out/exe/unbox") == 0) {
+  if (RUN("./out/exe/unbox dep/ivm_testdata/reel/png") == 0) {
 #endif
     RUN("rm -r tiff tiff.tar");
   }

@@ -12,7 +12,8 @@ static void image_reset(void) { used = 0; }
 
 static void image_deinit(void) { free(memory); }
 
-#ifndef DEBUG_IMAGE_MEM_USAGE
+// Debug image memory allocations
+#if 1
 #define print_used()
 #else
 #include <stdio.h>
