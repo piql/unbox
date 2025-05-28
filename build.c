@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#include "dev/build/util.c"
 
 #if 0
 #define CC "gcc"
@@ -13,22 +12,24 @@
 #define CC "gcc"
 #define CC_DEFINES ""
 #define CFLAGS                                                                 \
-  " -g -fsanitize=address -Wall -Wextra -Wpedantic -Werror -std=c99"
-#elif 1
+" -g -fsanitize=address -Wall -Wextra -Wpedantic -Werror -std=c99"
+#elif 0
 #define CC "tcc"
 #define CC_DEFINES " -DSTBI_NO_SIMD"
 #define CFLAGS " -I$(dirname $(which tcc))/include -L$(dirname $(which tcc))"
-#elif 1
+#elif 0
 #define CC "zig cc"
 #define CC_DEFINES ""
 #define CFLAGS                                                                 \
-  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
+" -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
 #else
 #define CC "zig cc"
 #define CC_DEFINES ""
 #define TARGET_WINDOWS
 #define CFLAGS " -g -fsanitize=undefined -target x86_64-windows"
 #endif
+
+#include "dev/build/util.c" // uses TARGET_WINDOWS
 
 #define UNBOXING_DEFINES " -D_DEBUG -DRAND_FILE='\"randfile\"'"
 
@@ -189,20 +190,18 @@ int main(int argc, char *argv[]) {
   writeVSCodeInfo(INCLUDES, DEFINES);
 #endif
 #ifdef TARGET_WINDOWS
-  COMPILE("src/main.c", "out/exe/unbox.exe");
-  RUN("wine out/exe/unbox.exe");
+  int cc_status = COMPILE("src/main.c", "out/exe/unbox.exe");
 #else
   int cc_status = COMPILE("src/main.c", "out/exe/unbox");
+#endif
   if (cc_status != 0)
     return cc_status;
-  char run_cmd[4096];
-  if (argc > 1)
-    snprintf(run_cmd, 4096, "%s %s", "./out/exe/unbox", argv[1]);
-  else
-    snprintf(run_cmd, 4096, "%s", "./out/exe/unbox");
-  if (RUN(run_cmd) == 0) {
+#ifdef TARGET_WINDOWS
+  if (RUN("wine out/exe/unbox.exe") == 0) {
+#else
+  if (RUN("./out/exe/unbox") == 0) {
+#endif
     RUN("rm -r tiff tiff.tar");
   }
-#endif
   return EXIT_SUCCESS;
 }

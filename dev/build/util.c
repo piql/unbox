@@ -72,6 +72,10 @@ static void writeIncDefJSONRows(FILE *f, const char *incdefs,
   size_t len;
   const char *incdef = nextIncDef(&it, &len);
   bool first = true;
+#ifdef TARGET_WINDOWS
+  if (flag == 'D')
+    writeRow(f, "_WIN32", 6, &first);
+#endif
   writeRow(f, incdef, len, &first);
   while ((incdef = nextIncDef(&it, &len)))
     writeRow(f, incdef, len, &first);

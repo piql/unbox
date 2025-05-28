@@ -7,8 +7,34 @@ typedef struct {
 } FileMap;
 
 static FileMap mapFile(const char *const restrict path);
+static void unmapFile(FileMap *file);
 
 #ifdef _WIN32
+#include <windows.h>
+
+static FileMap mapFile(const char *const restrict path) {
+  HANDLE file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL,
+                            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (file == INVALID_HANDLE_VALUE)
+    return (FileMap){.data = NULL, .size = 0};
+  LARGE_INTEGER size;
+  if (GetFileSizeEx(file, &size) == 0 || size.QuadPart == 0) {
+    CloseHandle(file);
+    return (FileMap){.data = NULL, .size = 0};
+  }
+  HANDLE map = CreateFileMappingA(file, NULL, PAGE_READONLY, 0, 0, NULL);
+  CloseHandle(file);
+  if (map == NULL) {
+    return (FileMap){.data = NULL, .size = 0};
+  }
+  void *data = MapViewOfFile(map, FILE_MAP_READ, 0, 0, size.QuadPart);
+  CloseHandle(map);
+  return data == NULL ? (FileMap){.data = NULL, .size = 0}
+                      : (FileMap){.data = data, .size = size.QuadPart};
+}
+
+static void unmapFile(FileMap *file) { UnmapViewOfFile(file->data); }
+
 #else
 #include <fcntl.h>
 #include <sys/mman.h>
