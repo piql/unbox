@@ -1,123 +1,31 @@
-#include "load_image.c"
 #include "reel.c"
+#include "types.h"
 #include "unboxing_log.c"
 #include <boxing/config.h>
+#include <boxing/math/crc64.h>
 #include <boxing/unboxer.h>
 #include <controldata.h>
+#include <inttypes.h>
 #include <mxml.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
-#include <tocdata_c.h>
 
-#include "../dep/unboxing/tests/testutils/src/config_source_4k_controlframe_v7.h"
-
-static const char *const boxing_unboxer_result_str[] = {
-    "OK",
-    "METADATA_ERROR",
-    "BORDER_TRACKING_ERROR",
-    "DATA_DECODE_ERROR",
-    "CRC_MISMATCH_ERROR",
-    "CONFIG_ERROR",
-    "PROCESS_CALLBACK_ABORT",
-    "INPUT_DATA_ERROR",
-    "SPLICING",
-};
-
-typedef struct {
-  boxing_unboxer_parameters parameters;
-  boxing_unboxer *unboxer;
-  boxing_metadata_list *metadata;
-} Unboxer;
-
-enum UnboxerInitStatus { UnboxerInitOK, UnboxerInitFailed };
-static enum UnboxerInitStatus UnboxerCreate(boxing_config *config, bool is_raw,
-                                            Unboxer *out) {
-  boxing_unboxer_parameters parameters;
-  boxing_unboxer_parameters_init(&parameters);
-  parameters.is_raw = is_raw;
-  if (parameters.pre_filter.coeff) {
-    parameters.format = config;
-    boxing_unboxer *unboxer = boxing_unboxer_create(&parameters);
-    if (unboxer) {
-      boxing_metadata_list *metadata = boxing_metadata_list_create();
-      if (metadata) {
-        *out = (Unboxer){
-            .parameters = parameters,
-            .unboxer = unboxer,
-            .metadata = metadata,
-        };
-        return UnboxerInitOK;
-      }
-      boxing_unboxer_free(unboxer);
-    }
-    boxing_unboxer_parameters_free(&parameters);
-  }
-  return UnboxerInitFailed;
-}
-
-static void UnboxerDestroy(Unboxer *unboxer) {
-  boxing_metadata_list_free(unboxer->metadata);
-  boxing_unboxer_free(unboxer->unboxer);
-  boxing_unboxer_parameters_free(&unboxer->parameters);
-}
-
-enum UnboxerUnboxStatus { UnboxOK, UnboxFailed };
-static enum UnboxerUnboxStatus
-UnboxerUnbox(Unboxer *unboxer, uint8_t *image_data, uint32_t width,
-             uint32_t height,
-             boxing_metadata_content_types fallback_metadata_content_type,
-             char **result, size_t *result_len) {
-  boxing_log_args(BoxingLogLevelAlways, "width %d, height %d, data %p", width,
-                  height, image_data);
-  boxing_image8 image = {
-      .width = (unsigned)width,
-      .height = (unsigned)height,
-      .is_owning_data = DFALSE,
-      .data = image_data,
-  };
-  int extract_result = BOXING_UNBOXER_OK;
-  gvector data = {
-      .buffer = NULL,
-      .size = 0,
-      .item_size = 1,
-      .element_free = NULL,
-  };
-  enum boxing_unboxer_result decode_result = boxing_unboxer_unbox(
-      &data, unboxer->metadata, &image, unboxer->unboxer, &extract_result, NULL,
-      fallback_metadata_content_type);
-  boxing_log_args(BoxingLogLevelAlways, "unbox: extract: %s, decode: %s",
-                  boxing_unboxer_result_str[extract_result],
-                  boxing_unboxer_result_str[decode_result]);
-  if (extract_result == BOXING_UNBOXER_OK &&
-      decode_result == BOXING_UNBOXER_OK) {
-    // End char should be \n, set to '\0'
-    ((char *)data.buffer)[data.size - 1] = '\0';
-    *result = data.buffer;
-    *result_len = data.size - 1;
-    return UnboxOK;
-  }
-  if (data.buffer)
-    free(data.buffer);
-  return UnboxFailed;
-}
-
-static bool writePathSegment(const char *const restrict input, char *scratch,
-                             const size_t scratch_len,
+static bool writePathSegment(const char *const restrict input, Slice scratch,
                              unsigned *restrict cursor) {
   const size_t input_len = strlen(input);
   for (size_t i = 0; i < *cursor; i++)
-    scratch[i] = input[i];
+    ((char *)scratch.data)[i] = input[i];
   size_t j;
-  for (j = *cursor; j < input_len && j < scratch_len; j++) {
+  for (j = *cursor; j < input_len && j < scratch.size; j++) {
     if (input[j] == '/') {
       *cursor = j + 1;
       return true;
     }
-    scratch[j] = input[j];
+    ((char *)scratch.data)[j] = input[j];
   }
-  scratch[j] = '\0';
+  ((char *)scratch.data)[j] = '\0';
   return false;
 }
 
@@ -125,7 +33,7 @@ void ensurePathExists(const char *const restrict path) {
   char buf[256] = {0};
   unsigned cursor = 0;
   for (;;) {
-    if (writePathSegment(path, buf, sizeof(buf), &cursor)) {
+    if (writePathSegment(path, sliceof(buf), &cursor)) {
 #ifdef _WIN32
       mkdir(buf);
 #else
@@ -147,9 +55,87 @@ static void printReelInformation(afs_administrative_metadata *md) {
   boxing_log(BoxingLogLevelAlways, "");
 }
 
+static bool writeEntireFile(const char *const restrict file_path, Slice data) {
+  FILE *f = fopen(file_path, "w");
+  size_t total_written = 0;
+  while (total_written < data.size) {
+    size_t written = fwrite((const char *)data.data + total_written, 1,
+                            data.size - total_written, f);
+    if (written == 0) {
+      fclose(f);
+      return false;
+    }
+    total_written += written;
+  }
+  fclose(f);
+  return true;
+}
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
+
+static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
+                                Slice toc_contents) {
+  afs_toc_data *toc = afs_toc_data_create();
+  if (!toc)
+    return false;
+  if (!afs_toc_data_load_string(toc, toc_contents.data)) {
+    afs_toc_data_free(toc);
+    return false;
+  }
+  afs_toc_data_reel *data_reel = afs_toc_data_reels_get_reel(toc->reels, 0);
+  unsigned files = afs_toc_data_reel_file_count(data_reel);
+  char buf[4096];
+  for (unsigned i = 0; i < files; i++) {
+    afs_toc_file *file = afs_toc_data_reel_get_file_by_index(data_reel, i);
+    if (!(file->types & AFS_TOC_FILE_TYPE_DIGITAL)) {
+      printf("skipping non-digital file: %s\n", file->name);
+      continue;
+    }
+    printf("%d[%d]..%d[%d] %s (%s)\n", file->start_frame, file->start_byte,
+           file->end_frame, file->end_byte, file->name, file->checksum);
+    if (!reel->frames[file->start_frame]) {
+      afs_toc_data_free(toc);
+      return false;
+    }
+
+    sprintf(buf, "%s/%s", reel->directory_path,
+            (const char *)reel->string_pool.data +
+                reel->frames[file->start_frame] - 1);
+    printf("loading %s\n", buf);
+    Image data_frame = loadImage(buf);
+    if (!data_frame.data) {
+      afs_toc_data_free(toc);
+      return false;
+    }
+    Slice frame_contents;
+    if (UnboxerUnbox(unboxer, data_frame.data, data_frame.width,
+                     data_frame.height, BOXING_METADATA_CONTENT_TYPES_DATA,
+                     &frame_contents) != UnboxOK) {
+      afs_toc_data_free(toc);
+      return false;
+    }
+    ensurePathExists(file->name);
+    FILE *output_file = fopen(file->name, "w+b");
+    if (!output_file) {
+      free(frame_contents.data);
+      afs_toc_data_free(toc);
+      return false;
+    }
+    fwrite((const char *)frame_contents.data + file->start_byte, 1,
+           file->end_byte + 1 - file->start_byte, output_file);
+    fclose(output_file);
+#ifndef _WIN32
+    char path[4096];
+    sprintf(path, "sha1sum %s", file->name);
+    system(path);
+#endif
+    free(frame_contents.data);
+  }
+  afs_toc_data_free(toc);
+  return true;
+}
 
 int main(int argc, char *argv[]) {
 #ifdef _WIN32
@@ -160,171 +146,93 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
   int status = EXIT_SUCCESS;
+  dcrc64 *dcrc64 = boxing_math_crc64_create_def();
+  if (!dcrc64) {
+    boxing_log(BoxingLogLevelError, "Failed to create CRC64 instance");
+    return EXIT_FAILURE;
+  }
   Reel *reel = Reel_create();
-  if (reel) {
-    if (Reel_init(reel, argv[1])) {
-      boxing_config *config =
-          boxing_config_create_from_structure(&config_source_v7);
-      if (config) {
-        char buf[4096];
-        sprintf(buf, "%s/%s", argv[1], reel->string_pool + reel->frames[1] - 1);
-        printf("loading %s\n", buf);
-        Image control_frame = loadImage(buf);
-        if (control_frame.data) {
-          Unboxer unboxer;
-          if (UnboxerCreate(config,
-                            control_frame.width == 4096 &&
-                                control_frame.height == 2160,
-                            &unboxer) == UnboxerInitOK) {
-            char *data = NULL;
-            size_t len = 0;
-            if (UnboxerUnbox(&unboxer, control_frame.data, control_frame.width,
-                             control_frame.height,
-                             BOXING_METADATA_CONTENT_TYPES_CONTROLFRAME, &data,
-                             &len) == UnboxOK) {
-              afs_control_data *ctl = afs_control_data_create();
-              if (afs_control_data_load_string(ctl, data)) {
-                printReelInformation(ctl->administrative_metadata);
-                if (afs_toc_files_get_tocs_count(
-                        ctl->technical_metadata->afs_tocs) > 0) {
-                  afs_toc_file *toc = afs_toc_files_get_toc(
-                      ctl->technical_metadata->afs_tocs, 0);
-                  sprintf(buf, "%s/%s", argv[1],
-                          reel->string_pool + reel->frames[toc->start_frame] -
-                              1);
-                  printf("loading %s\n", buf);
-                  Image frame = loadImage(buf);
-                  if (frame.data) {
-                    Unboxer data_unboxer;
-                    if (UnboxerCreate(ctl->technical_metadata
-                                          ->afs_content_boxing_format->config,
-                                      frame.width == 4096 &&
-                                          frame.height == 2160,
-                                      &data_unboxer) == UnboxerInitOK) {
-                      char *data = NULL;
-                      size_t len = 0;
-                      if (UnboxerUnbox(&data_unboxer, frame.data, frame.width,
-                                       frame.height,
-                                       BOXING_METADATA_CONTENT_TYPES_TOC, &data,
-                                       &len) == UnboxOK) {
-                        afs_toc_data *toc = afs_toc_data_create();
-                        if (afs_toc_data_load_string(toc, data)) {
-                          afs_toc_data_reel *data_reel =
-                              afs_toc_data_reels_get_reel(toc->reels, 0);
-                          unsigned files =
-                              afs_toc_data_reel_file_count(data_reel);
-                          for (unsigned i = 0; i < files; i++) {
-                            afs_toc_file *file =
-                                afs_toc_data_reel_get_file_by_index(data_reel,
-                                                                    i);
-                            printf("%d[%d]..%d[%d] %s (%s)\n",
-                                   file->start_frame, file->start_byte,
-                                   file->end_frame, file->end_byte, file->name,
-                                   file->checksum);
-                            sprintf(buf, "%s/%s", argv[1],
-                                    reel->string_pool +
-                                        reel->frames[file->start_frame] - 1);
-                            printf("loading %s\n", buf);
-                            Image data_frame = loadImage(buf);
-                            if (data_frame.data) {
-                              char *data = NULL;
-                              size_t len = 0;
-                              if (UnboxerUnbox(
-                                      &data_unboxer, data_frame.data,
-                                      data_frame.width, data_frame.height,
-                                      BOXING_METADATA_CONTENT_TYPES_DATA, &data,
-                                      &len) == UnboxOK) {
-                                ensurePathExists(file->name);
-                                FILE *output_file = fopen(file->name, "w+b");
-                                if (output_file) {
-                                  fwrite(data + file->start_byte, 1,
-                                         file->end_byte + 1 - file->start_byte,
-                                         output_file);
-                                  fclose(output_file);
-#ifndef _WIN32
-                                  char path[4096];
-                                  sprintf(path, "sha1sum %s", file->name);
-                                  system(path);
-#endif
-                                } else {
-                                  boxing_log(BoxingLogLevelError,
-                                             "Failed to open output file");
-                                  status = EXIT_FAILURE;
-                                }
-                                free(data);
-                              } else {
-                                boxing_log(BoxingLogLevelError,
-                                           "Failed to unbox data frame");
-                                status = EXIT_FAILURE;
-                              }
-                            } else {
-                              boxing_log(BoxingLogLevelError,
-                                         "Failed to load data frame");
-                              status = EXIT_FAILURE;
-                            }
-                            if (status == EXIT_FAILURE)
-                              break;
-                          }
-                          afs_toc_data_free(toc);
-                        } else {
-                          boxing_log(BoxingLogLevelError,
-                                     "Failed to parse toc");
-                          status = EXIT_FAILURE;
-                        }
-                        free(data);
-                      } else {
-                        boxing_log(BoxingLogLevelError, "Failed to unbox toc");
-                        status = EXIT_FAILURE;
-                      }
-                      UnboxerDestroy(&data_unboxer);
-                    } else {
-                      boxing_log(BoxingLogLevelError,
-                                 "Failed to initialize data_unboxer");
-                      status = EXIT_FAILURE;
-                    }
-                  } else {
-                    boxing_log(BoxingLogLevelError,
-                               "Failed to load frame image");
-                    status = EXIT_FAILURE;
-                  }
-                } else {
-                  boxing_log(BoxingLogLevelError,
-                             "No TOCs found in technical metadata");
-                  status = EXIT_FAILURE;
-                }
-                afs_control_data_free(ctl);
-              } else {
-                boxing_log(BoxingLogLevelError,
-                           "Failed to load afs control data");
-                status = EXIT_FAILURE;
-              }
-              free(data);
-            } else {
-              boxing_log(BoxingLogLevelError, "Failed to unbox");
-              status = EXIT_FAILURE;
-            }
-            UnboxerDestroy(&unboxer);
+  if (!reel) {
+    boxing_math_crc64_free(dcrc64);
+    boxing_log(BoxingLogLevelError, "Failed to create reel");
+    return EXIT_FAILURE;
+  }
+  if (!Reel_init(reel, argv[1])) {
+    Reel_destroy(reel);
+    boxing_math_crc64_free(dcrc64);
+    boxing_log(BoxingLogLevelError, "Failed to init reel");
+    return EXIT_FAILURE;
+  }
+  bool use_raw_decoding;
+  Slice control_frame_contents =
+      Reel_unbox_control_frame(reel, &use_raw_decoding);
+  if (control_frame_contents.data) {
+    afs_control_data *ctl = afs_control_data_create();
+    if (afs_control_data_load_string(
+            ctl, (const char *)control_frame_contents.data)) {
+      printReelInformation(ctl->administrative_metadata);
+      Unboxer unboxer;
+      if (UnboxerCreate(
+              ctl->technical_metadata->afs_content_boxing_format->config,
+              use_raw_decoding, &unboxer) == UnboxerInitOK) {
+        Slice toc_contents;
+        bool toc_contents_cached = false;
+        uint64_t crc = boxing_math_crc64_calc_crc(
+            dcrc64, control_frame_contents.data, control_frame_contents.size);
+        boxing_math_crc64_reset(dcrc64, POLY_CRC_64);
+        char cachefile_path[4096];
+        snprintf(cachefile_path, sizeof(cachefile_path),
+                 "control_frame_%" PRIx64 ".xml", crc);
+        printf("checking for: %s\n", cachefile_path);
+        Slice cached_toc_contents = mapFile(cachefile_path);
+        if (cached_toc_contents.data) {
+          toc_contents = cached_toc_contents;
+          toc_contents_cached = true;
+        } else {
+          if (afs_toc_files_get_tocs_count(ctl->technical_metadata->afs_tocs) >
+              0) {
+            afs_toc_file *toc_file =
+                afs_toc_files_get_toc(ctl->technical_metadata->afs_tocs, 0);
+            toc_contents = Reel_unbox_toc(reel, &unboxer, toc_file);
+            // ignore failing to write cache
+            if (toc_contents.data)
+              writeEntireFile(cachefile_path, toc_contents);
           } else {
-            boxing_log(BoxingLogLevelError, "Failed to initialize unboxer");
+            boxing_log(BoxingLogLevelError,
+                       "No TOCs found in control frame data");
             status = EXIT_FAILURE;
           }
+        }
+        if (toc_contents.data) {
+          if (!unboxAndOutputFiles(reel, &unboxer, toc_contents)) {
+            boxing_log(BoxingLogLevelError, "Failed to unbox / output files");
+            status = EXIT_FAILURE;
+          }
+          if (toc_contents_cached)
+            unmapFile(toc_contents);
+          else
+            free(toc_contents.data);
         } else {
-          boxing_log(BoxingLogLevelError, "Failed to load control frame");
+          boxing_log(BoxingLogLevelError, "Failed to unbox TOC");
           status = EXIT_FAILURE;
         }
-        boxing_config_free(config);
+        UnboxerDestroy(&unboxer);
       } else {
-        boxing_log(BoxingLogLevelError, "Failed to load config_structure");
+        boxing_log(BoxingLogLevelError, "Failed to create unboxer");
         status = EXIT_FAILURE;
       }
     } else {
-      boxing_log(BoxingLogLevelError, "Failed to init reel");
+      boxing_log(BoxingLogLevelError, "Failed to load control data");
       status = EXIT_FAILURE;
     }
-    Reel_destroy(reel);
+    afs_control_data_free(ctl);
+    free(control_frame_contents.data);
   } else {
-    boxing_log(BoxingLogLevelError, "Failed to create reel");
+    boxing_log(BoxingLogLevelError, "Failed to unbox control frame");
     status = EXIT_FAILURE;
   }
+  Reel_destroy(reel);
+  boxing_math_crc64_free(dcrc64);
+  printf("\x1b[%dm%s\x1b[0m\n", status ? 91 : 92, status ? "FAILED" : "OK");
   return status;
 }

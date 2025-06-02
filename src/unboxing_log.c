@@ -1,3 +1,6 @@
+#ifndef UNBOXING_LOG_C
+#define UNBOXING_LOG_C
+
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -29,3 +32,5 @@ void boxing_log_args(const enum BoxingLogLevel level,
   va_end(args);
   fprintf(stderr, "%s %.*s\n", boxing_log_level_str[level], len, buf);
 }
+
+#endif

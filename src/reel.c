@@ -2,17 +2,19 @@
 // gcc src/find_frames.c -fsanitize=address -g
 // ./a.out dep/ivm_testdata/reel/png
 
+#include <stdlib.h>
+
+#include "../dep/unboxing/tests/testutils/src/config_source_4k_controlframe_v7.h"
+#include "load_image.c"
+#include "types.h"
+#include "unboxer_helpers.c"
+#include <boxing/config.h>
 #include <dirent.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-
-#define min(x, y) ((y) < (x) ? (y) : (x))
-#define max(x, y) ((x) < (y) ? (y) : (x))
-#define clamp(x, lo, hi) ((x) < (lo) ? (lo) : (hi) < (x) ? (hi) : (x))
-#define countof(x) (sizeof(x) / sizeof *(x))
+#include <tocdata_c.h>
 
 static bool grow_exact(void **ptr, size_t size, size_t *cap, size_t new_cap) {
   if (*cap >= new_cap)
@@ -36,11 +38,11 @@ static bool grow(void **ptr, size_t size, size_t *cap, size_t required_cap) {
 }
 
 typedef struct {
-  char *string_pool;
-  size_t string_pool_count;
-  size_t string_pool_capacity;
+  const char *directory_path;
+  Slice string_pool;
+  size_t string_pool_used;
   uint16_t count;
-  uint32_t frames[65529];
+  uint32_t frames[65536];
 } Reel;
 
 bool Reel_init(Reel *reel,
@@ -58,20 +60,21 @@ bool Reel_init(Reel *reel,
     if (name_end == ent->d_name)
       continue;
     if (id >= 0 && (unsigned long)id < countof(reel->frames)) {
-      if (!grow((void **)&reel->string_pool, 1, &reel->string_pool_capacity,
-                reel->string_pool_count + name_len + 1)) {
+      if (!grow((void **)&reel->string_pool, 1, &reel->string_pool.size,
+                reel->string_pool_used + name_len + 1)) {
         closedir(d);
         return false;
       }
-      uint32_t str_start = reel->string_pool_count + 1;
-      memcpy(reel->string_pool + reel->string_pool_count, ent->d_name,
-             name_len + 1);
-      reel->string_pool_count += name_len + 1;
+      uint32_t str_start = reel->string_pool_used + 1;
+      memcpy((char *)reel->string_pool.data + reel->string_pool_used,
+             ent->d_name, name_len + 1);
+      reel->string_pool_used += name_len + 1;
       reel->frames[id] = str_start;
       reel->count++;
     }
   }
   closedir(d);
+  reel->directory_path = directory_path;
   return true;
 }
 
@@ -84,13 +87,81 @@ Reel *Reel_create(void) {
 }
 
 void Reel_destroy(Reel *reel) {
-  free(reel->string_pool);
+  free(reel->string_pool.data);
   free(reel);
 }
 
 void Reel_reset(Reel *reel) {
-  reel->string_pool_count = 0;
+  reel->string_pool_used = 0;
   memset(&reel->frames, 0, sizeof reel->frames);
+}
+
+Slice Reel_unbox_control_frame(Reel *reel, bool *is_raw) {
+  boxing_config *config =
+      boxing_config_create_from_structure(&config_source_v7);
+  if (!config)
+    return Slice_empty;
+  char buf[4096];
+  {
+    int r =
+        snprintf(buf, sizeof(buf), "%s/%s", reel->directory_path,
+                 (const char *)reel->string_pool.data + reel->frames[1] - 1);
+    if (r < 0 || r > (int)sizeof(buf)) {
+      boxing_config_free(config);
+      return Slice_empty;
+    }
+  }
+  Image img = loadImage(buf);
+  if (!img.data) {
+    boxing_config_free(config);
+    return Slice_empty;
+  }
+  bool use_raw_decoding = img.width == 4096 && img.height == 2160;
+  Unboxer unboxer;
+  if (UnboxerCreate(config, use_raw_decoding, &unboxer) != UnboxerInitOK) {
+    boxing_config_free(config);
+    return Slice_empty;
+  }
+  Slice result;
+  if (UnboxerUnbox(&unboxer, img.data, img.width, img.height,
+                   BOXING_METADATA_CONTENT_TYPES_CONTROLFRAME,
+                   &result) != UnboxOK) {
+    UnboxerDestroy(&unboxer);
+    boxing_config_free(config);
+    return Slice_empty;
+  }
+  if (is_raw)
+    *is_raw = use_raw_decoding;
+  UnboxerDestroy(&unboxer);
+  boxing_config_free(config);
+  return result;
+}
+
+Slice Reel_unbox_toc(Reel *reel, Unboxer *unboxer, afs_toc_file *toc) {
+  char buf[4096];
+  for (int f = toc->start_frame; f < toc->end_frame + 1; f++) {
+    if (!reel->frames[f])
+      return Slice_empty;
+    {
+      int r =
+          snprintf(buf, sizeof(buf), "%s/%s", reel->directory_path,
+                   (const char *)reel->string_pool.data + reel->frames[f] - 1);
+      if (r < 0 || r > (int)sizeof(buf))
+        return Slice_empty;
+    }
+    Image frame = loadImage(buf);
+    if (!frame.data)
+      return Slice_empty;
+    Slice toc_contents;
+    if (UnboxerUnbox(unboxer, frame.data, frame.width, frame.height,
+                     BOXING_METADATA_CONTENT_TYPES_TOC,
+                     &toc_contents) != UnboxOK)
+      return Slice_empty;
+    if (toc_contents.size == 0)
+      continue;
+    return toc_contents;
+  }
+  return Slice_empty;
 }
 
 /*
