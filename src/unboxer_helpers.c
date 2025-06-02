@@ -1,6 +1,7 @@
 #include "types.h"
 #include "unboxing_log.c"
 #include <boxing/unboxer.h>
+#include <inttypes.h>
 #include <stdbool.h>
 
 static const char *const boxing_unboxer_result_str[] = {
@@ -95,6 +96,15 @@ UnboxerUnbox(Unboxer *unboxer, uint8_t *image_data, uint32_t width,
                     boxing_metadata_type_str[type]);
     switch (type) {
     case BOXING_METADATA_TYPE_FRAMENUMBER:
+      off += snprintf(metadata_buf + off, sizeof(metadata_buf) - off,
+                      "\x1b[92m%u", ((boxing_metadata_item_u32 *)item)->value);
+      break;
+    case BOXING_METADATA_TYPE_DATACRC:
+      off += snprintf(metadata_buf + off, sizeof(metadata_buf) - off,
+                      "\x1b[93m%" PRIx64,
+                      ((boxing_metadata_item_u64 *)item)->value);
+      break;
+    case BOXING_METADATA_TYPE_DATASIZE:
       off += snprintf(metadata_buf + off, sizeof(metadata_buf) - off,
                       "\x1b[92m%u", ((boxing_metadata_item_u32 *)item)->value);
       break;

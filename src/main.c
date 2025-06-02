@@ -87,6 +87,8 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
   afs_toc_data_reel *data_reel = afs_toc_data_reels_get_reel(toc->reels, 0);
   unsigned files = afs_toc_data_reel_file_count(data_reel);
   char buf[4096];
+  int last_frame = -1;
+  Slice last_frame_data = Slice_empty;
   for (unsigned i = 0; i < files; i++) {
     afs_toc_file *file = afs_toc_data_reel_get_file_by_index(data_reel, i);
     if (!(file->types & AFS_TOC_FILE_TYPE_DIGITAL)) {
@@ -96,30 +98,45 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
     printf("%d[%d]..%d[%d] %s (%s)\n", file->start_frame, file->start_byte,
            file->end_frame, file->end_byte, file->name, file->checksum);
     if (!reel->frames[file->start_frame]) {
-      afs_toc_data_free(toc);
-      return false;
-    }
-
-    sprintf(buf, "%s/%s", reel->directory_path,
-            (const char *)reel->string_pool.data +
-                reel->frames[file->start_frame] - 1);
-    printf("loading %s\n", buf);
-    Image data_frame = loadImage(buf);
-    if (!data_frame.data) {
+      if (last_frame_data.data)
+        free(last_frame_data.data);
       afs_toc_data_free(toc);
       return false;
     }
     Slice frame_contents;
-    if (UnboxerUnbox(unboxer, data_frame.data, data_frame.width,
-                     data_frame.height, BOXING_METADATA_CONTENT_TYPES_DATA,
-                     &frame_contents) != UnboxOK) {
-      afs_toc_data_free(toc);
-      return false;
+    if (last_frame == file->start_frame && last_frame_data.data) {
+      frame_contents = last_frame_data;
+    } else {
+      sprintf(buf, "%s/%s", reel->directory_path,
+              (const char *)reel->string_pool.data +
+                  reel->frames[file->start_frame] - 1);
+      printf("loading %s\n", buf);
+      Image data_frame = loadImage(buf);
+      if (!data_frame.data) {
+        if (last_frame_data.data)
+          free(last_frame_data.data);
+        afs_toc_data_free(toc);
+        return false;
+      }
+
+      if (UnboxerUnbox(unboxer, data_frame.data, data_frame.width,
+                       data_frame.height, BOXING_METADATA_CONTENT_TYPES_DATA,
+                       &frame_contents) != UnboxOK) {
+        if (last_frame_data.data)
+          free(last_frame_data.data);
+        afs_toc_data_free(toc);
+        return false;
+      }
+      last_frame = file->start_frame;
+      if (last_frame_data.data)
+        free(last_frame_data.data);
+      last_frame_data = frame_contents;
     }
     ensurePathExists(file->name);
     FILE *output_file = fopen(file->name, "w+b");
     if (!output_file) {
-      free(frame_contents.data);
+      if (last_frame_data.data)
+        free(last_frame_data.data);
       afs_toc_data_free(toc);
       return false;
     }
@@ -131,8 +148,9 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
     sprintf(path, "sha1sum %s", file->name);
     system(path);
 #endif
-    free(frame_contents.data);
   }
+  if (last_frame_data.data)
+    free(last_frame_data.data);
   afs_toc_data_free(toc);
   return true;
 }
