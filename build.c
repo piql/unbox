@@ -21,6 +21,12 @@
 #define CC_DEFINES ""
 #define CFLAGS                                                                 \
   " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
+#elif 0
+#define CC "zig cc"
+#define CC_DEFINES ""
+#define RELEASE
+#define TARGET_WINDOWS
+#define CFLAGS " -O3 -s -target x86_64-windows"
 #else
 #define CC "zig cc"
 #define CC_DEFINES ""
