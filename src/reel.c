@@ -74,6 +74,8 @@ bool Reel_init(Reel *reel,
     }
   }
   closedir(d);
+  if (!reel->count)
+    return false;
   reel->directory_path = directory_path;
   return true;
 }
@@ -97,6 +99,8 @@ void Reel_reset(Reel *reel) {
 }
 
 Slice Reel_unbox_control_frame(Reel *reel, bool *is_raw) {
+  if (!reel->frames[1])
+    return Slice_empty;
   boxing_config *config =
       boxing_config_create_from_structure(&config_source_v7);
   if (!config)

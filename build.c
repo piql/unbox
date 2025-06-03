@@ -31,12 +31,16 @@
 #define CC "zig cc"
 #define CC_DEFINES ""
 #define TARGET_WINDOWS
-#define CFLAGS " -g -fsanitize=undefined -target x86_64-windows"
+#define CFLAGS " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -target x86_64-windows"
 #endif
 
 #include "dev/build/util.c" // uses TARGET_WINDOWS
 
+#ifdef RELEASE
+#define UNBOXING_DEFINES " -DRAND_FILE='\"randfile\"'"
+#else
 #define UNBOXING_DEFINES " -D_DEBUG -DRAND_FILE='\"randfile\"'"
+#endif
 
 #define UNBOXING_LINK " -lm"
 
@@ -188,6 +192,14 @@
   SYSTEM_WITH_LOG(CC DEFINES INCLUDES SOURCES " " sources UNBOXING_LINK CFLAGS \
                                               " -o " output)
 
+bool has_arg(int argc, char *argv[], const char *arg) {
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], arg) == 0)
+      return true;
+  }
+  return false;
+}
+
 int main(int argc, char *argv[]) {
   mkdir("out", 0755);
   mkdir("out/exe", 0755);
@@ -201,12 +213,14 @@ int main(int argc, char *argv[]) {
 #endif
   if (cc_status != 0)
     return cc_status;
+  if (has_arg(argc, argv, "run")) {
 #ifdef TARGET_WINDOWS
-  if (RUN("wine out/exe/unbox.exe dep/ivm_testdata/reel/png") == 0) {
+    if (RUN("wine out/exe/unbox.exe dep/ivm_testdata/reel/png") == 0) {
 #else
-  if (RUN("./out/exe/unbox ../../../../Documents/piqlAccess/png") == 0) {
+    if (RUN("./out/exe/unbox ../../../../Documents/piqlAccess/png") == 0) {
 #endif
-    RUN("rm -r tiff tiff.tar");
+      RUN("rm -r tiff tiff.tar");
+    }
   }
   return EXIT_SUCCESS;
 }

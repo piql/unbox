@@ -178,7 +178,9 @@ int main(int argc, char *argv[]) {
   if (!Reel_init(reel, argv[1])) {
     Reel_destroy(reel);
     boxing_math_crc64_free(dcrc64);
-    boxing_log(BoxingLogLevelError, "Failed to init reel");
+    boxing_log(
+        BoxingLogLevelError,
+        "Failed to init reel (Maybe no frames found in the current folder?)");
     return EXIT_FAILURE;
   }
   bool use_raw_decoding;

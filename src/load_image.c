@@ -1,8 +1,8 @@
+#include "map_file.c"
+#include "unboxing_log.c"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "map_file.c"
 
 static void *memory = NULL;
 static size_t used = 0;
@@ -104,8 +104,12 @@ static void image_free(const void *const p) {
   image_realloc_sized(p, old_size, new_size)
 #define STBI_FREE(p) image_free(p)
 
+#define STBI_FAILURE_USERMSG
 #define STB_IMAGE_IMPLEMENTATION
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 #include "../dep/stb/stb_image.h"
+#pragma GCC diagnostic pop
 
 typedef struct {
   unsigned char *data;
@@ -129,8 +133,10 @@ Image loadImage(const char *const restrict path) {
     image_reset();
   unsigned char *data = stbi_load_from_memory(
       (unsigned char *)file.data, (int)file.size, &width, &height, NULL, 1);
-  image_debug_printf("data: %p (%s)\n", data, stbi_failure_reason());
   unmapFile(file);
-  return data == NULL ? (Image){.data = NULL, .width = 0, .height = 0}
-                      : (Image){.data = data, .width = width, .height = height};
+  if (data)
+    return (Image){.data = data, .width = width, .height = height};
+  boxing_log_args(BoxingLogLevelError, "Failed during loading of %s: %s", path,
+                  stbi_failure_reason());
+  return (Image){.data = NULL, .width = 0, .height = 0};
 }
