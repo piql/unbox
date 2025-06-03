@@ -31,7 +31,9 @@
 #define CC "zig cc"
 #define CC_DEFINES ""
 #define TARGET_WINDOWS
-#define CFLAGS " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -target x86_64-windows"
+#define CFLAGS                                                                 \
+  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -target "         \
+  "x86_64-windows"
 #endif
 
 #include "dev/build/util.c" // uses TARGET_WINDOWS
@@ -213,11 +215,13 @@ int main(int argc, char *argv[]) {
 #endif
   if (cc_status != 0)
     return cc_status;
+  RUN("date; ls -lAh --color=always out/exe");
   if (has_arg(argc, argv, "run")) {
 #ifdef TARGET_WINDOWS
     if (RUN("wine out/exe/unbox.exe dep/ivm_testdata/reel/png") == 0) {
 #else
     if (RUN("./out/exe/unbox ../../../../Documents/piqlAccess/png") == 0) {
+
 #endif
       RUN("rm -r tiff tiff.tar");
     }
