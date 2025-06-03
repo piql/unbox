@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 #include "../dep/unboxing/tests/testutils/src/config_source_4k_controlframe_v7.h"
+#include "grow.c"
 #include "load_image.c"
 #include "types.h"
 #include "unboxer_helpers.c"
@@ -15,27 +16,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <tocdata_c.h>
-
-static bool grow_exact(void **ptr, size_t size, size_t *cap, size_t new_cap) {
-  if (*cap >= new_cap)
-    return true;
-  void *new_ptr = realloc(*ptr, new_cap * size);
-  if (!new_ptr)
-    return false;
-  *ptr = new_ptr;
-  *cap = new_cap;
-  return true;
-}
-
-// returns true if there is enough capacity
-static bool grow(void **ptr, size_t size, size_t *cap, size_t required_cap) {
-  if (*cap >= required_cap)
-    return true;
-  size_t new_cap = max(16, *cap);
-  while (new_cap < required_cap)
-    new_cap *= 2;
-  return grow_exact(ptr, size, cap, new_cap);
-}
 
 typedef struct {
   const char *directory_path;
@@ -138,11 +118,14 @@ Slice Reel_unbox_control_frame(Reel *reel, bool *is_raw) {
     *is_raw = use_raw_decoding;
   UnboxerDestroy(&unboxer);
   boxing_config_free(config);
+  // Assume Control Frame ends with \n
+  ((char *)result.data)[--result.size] = '\0';
   return result;
 }
 
 Slice Reel_unbox_toc(Reel *reel, Unboxer *unboxer, afs_toc_file *toc) {
   char buf[4096];
+  Slice toc_contents = Slice_empty;
   for (int f = toc->start_frame; f < toc->end_frame + 1; f++) {
     if (!reel->frames[f])
       return Slice_empty;
@@ -156,16 +139,26 @@ Slice Reel_unbox_toc(Reel *reel, Unboxer *unboxer, afs_toc_file *toc) {
     Image frame = loadImage(buf);
     if (!frame.data)
       return Slice_empty;
-    Slice toc_contents;
+    Slice toc_contents_chunk;
     if (UnboxerUnbox(unboxer, frame.data, frame.width, frame.height,
                      BOXING_METADATA_CONTENT_TYPES_TOC,
-                     &toc_contents) != UnboxOK)
+                     &toc_contents_chunk) != UnboxOK)
       return Slice_empty;
-    if (toc_contents.size == 0)
-      continue;
-    return toc_contents;
+    size_t offset = toc_contents.size;
+    if (!grow_exact(&toc_contents.data, 1, &toc_contents.size,
+                    toc_contents.size + toc_contents_chunk.size)) {
+      if (toc_contents.data)
+        free(toc_contents.data);
+      return Slice_empty;
+    }
+    memcpy((char *)toc_contents.data + offset, toc_contents_chunk.data,
+           toc_contents_chunk.size);
+    if (toc_contents_chunk.data)
+      free(toc_contents_chunk.data);
   }
-  return Slice_empty;
+  // Assume TOC ends with \n
+  ((char *)toc_contents.data)[--toc_contents.size] = '\0';
+  return toc_contents;
 }
 
 /*

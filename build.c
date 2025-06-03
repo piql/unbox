@@ -190,9 +190,8 @@
 #define SOURCES UNBOXING_SOURCES AFS_SOURCES MXML_SOURCES
 #endif
 
-#define COMPILE(sources, output)                                               \
-  SYSTEM_WITH_LOG(CC DEFINES INCLUDES SOURCES " " sources UNBOXING_LINK CFLAGS \
-                                              " -o " output)
+#define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
+  SYSTEM_WITH_LOG(cc defines includes sources lflags cflags " -o " output)
 
 bool has_arg(int argc, char *argv[], const char *arg) {
   for (int i = 1; i < argc; i++) {
@@ -202,6 +201,12 @@ bool has_arg(int argc, char *argv[], const char *arg) {
   return false;
 }
 
+#ifdef TARGET_WINDOWS
+#define BIN_EXT ".exe"
+#else
+#define BIN_EXT ""
+#endif
+
 int main(int argc, char *argv[]) {
   mkdir("out", 0755);
   mkdir("out/exe", 0755);
@@ -209,19 +214,24 @@ int main(int argc, char *argv[]) {
   mkdir(".vscode", 0755);
   writeVSCodeInfo(INCLUDES, DEFINES);
 #endif
-#ifdef TARGET_WINDOWS
-  int cc_status = COMPILE("src/main.c", "out/exe/unbox.exe");
-#else
-  int cc_status = COMPILE("src/main.c", "out/exe/unbox");
-#endif
+
+  int cc_status = COMPILE(CC, DEFINES, INCLUDES, SOURCES " src/main.c",
+                          "out/exe/unbox" BIN_EXT, CFLAGS, UNBOXING_LINK);
   if (cc_status != 0)
     return cc_status;
+#ifndef TARGET_WINDOWS
+  cc_status = COMPILE(CC, "", "", " dev/raw_file_to_png.c",
+                      "out/exe/raw_file_to_png", CFLAGS, "");
+  if (cc_status != 0)
+    return cc_status;
+#endif
   RUN("date; ls -lAh --color=always out/exe");
   if (has_arg(argc, argv, "run")) {
 #ifdef TARGET_WINDOWS
-    if (RUN("wine out/exe/unbox.exe dep/ivm_testdata/reel/png") == 0) {
+    if (RUN("wine out/exe/unbox" BIN_EXT " dep/ivm_testdata/reel/png") == 0) {
 #else
-    if (RUN("./out/exe/unbox ../../../../Documents/piqlAccess/png") == 0) {
+    if (RUN("./out/exe/unbox" BIN_EXT
+            " ../../../../Documents/piqlAccess/png") == 0) {
 
 #endif
       RUN("rm -r tiff tiff.tar");

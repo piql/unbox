@@ -145,10 +145,8 @@ UnboxerUnbox(Unboxer *unboxer, uint8_t *image_data, uint32_t width,
                   boxing_unboxer_result_str[decode_result]);
   if (extract_result == BOXING_UNBOXER_OK &&
       decode_result == BOXING_UNBOXER_OK) {
-    // End char should be \n, set to '\0'
     if (data.buffer && data.size) {
-      ((char *)data.buffer)[data.size - 1] = '\0';
-      *result = (Slice){.data = data.buffer, .size = data.size - 1};
+      *result = (Slice){.data = data.buffer, .size = data.size};
     } else {
       *result = (Slice){.data = NULL, .size = 0};
     }

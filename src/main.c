@@ -187,6 +187,8 @@ int main(int argc, char *argv[]) {
   Slice control_frame_contents =
       Reel_unbox_control_frame(reel, &use_raw_decoding);
   if (control_frame_contents.data) {
+    printf("%.*s\n", (int)control_frame_contents.size,
+           (char *)control_frame_contents.data);
     afs_control_data *ctl = afs_control_data_create();
     if (afs_control_data_load_string(
             ctl, (const char *)control_frame_contents.data)) {
