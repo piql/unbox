@@ -17,3 +17,8 @@ jobs:
           ./build
       - name: Test
         run: ./out/exe/unbox dep/ivm_testdata/reel/png
+      - name: Upload debug binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: unbox
+          path: out/exe/unbox
