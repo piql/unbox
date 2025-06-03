@@ -206,6 +206,7 @@ int main(int argc, char *argv[]) {
   mkdir("out", 0755);
   mkdir("out/exe", 0755);
 #ifndef RELEASE
+  mkdir(".vscode", 0755);
   writeVSCodeInfo(INCLUDES, DEFINES);
 #endif
 #ifdef TARGET_WINDOWS
