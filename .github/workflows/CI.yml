@@ -13,7 +13,7 @@ jobs:
           submodules: "recursive"
       - name: Build
         run: |
-          gcc build.c -o build
+          gcc build.c -g -fsanitize=address -o build
           ./build
       - name: Test
         run: ./out/exe/unbox dep/ivm_testdata/reel/png
