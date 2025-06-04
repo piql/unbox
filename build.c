@@ -13,6 +13,7 @@ E
 echo -e "\x1b[90mgcc -o $(basename $0 .c) "$@" $(basename $0)\x1b[0m"
 set -e
 gcc -o $(basename $0 .c) "$@" $(basename $0)
+echo -e "\x1b[90m./$(basename $0 .c)\x1b[0m"
 ./$(basename $0 .c)
 exit $?
 
