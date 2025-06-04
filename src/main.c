@@ -115,6 +115,7 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
     }
 
     size_t bytes_written = 0;
+    size_t bytes_to_skip = file->start_byte;
     for (int f = file->start_frame; f <= file->end_frame; f++) {
       if (!reel->frames[f]) {
         afs_toc_data_free(toc);
@@ -136,12 +137,20 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
         return false;
       }
       if (frame_contents.size) {
-        size_t bytes_to_write =
-            min(frame_contents.size, file->size - bytes_written);
-        fwrite((const char *)frame_contents.data, 1, bytes_to_write,
-               output_file);
-        free(frame_contents.data);
-        bytes_written += bytes_to_write;
+        size_t start = 0;
+        if (bytes_to_skip) {
+          start = min(frame_contents.size, bytes_to_skip);
+        }
+        if (start < frame_contents.size) {
+
+          size_t bytes_to_write =
+              min(frame_contents.size - start, file->size - bytes_written);
+          fwrite((const char *)frame_contents.data + start, 1, bytes_to_write,
+                 output_file);
+          free(frame_contents.data);
+          bytes_written += bytes_to_write;
+        }
+        bytes_to_skip -= start;
       }
     }
     fclose(output_file);
@@ -152,6 +161,8 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
 #endif
   }
   afs_toc_data_free(toc);
+  // Attempt to fix DATA_DECODE_ERROR
+  // boxing_unboxer_reset(unboxer->unboxer);
   return true;
 }
 

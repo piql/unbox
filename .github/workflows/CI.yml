@@ -16,7 +16,7 @@ jobs:
           gcc build.c -g -fsanitize=address -o build
           ./build
       - name: Test
-        run: ./out/exe/unbox dep/ivm_testdata/reel/png
+        run: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
       - name: Upload debug binary
         uses: actions/upload-artifact@v4
         with:
