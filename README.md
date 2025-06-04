@@ -1,4 +1,26 @@
-# Preliminary plan for reading
+# Unboxing Command-line tool
+
+## Project organization
+
+- `dep` - Dependencies (as git submodules):
+  - `afs` - Archival File System Library, used to parse control frame and table
+    of contents.
+  - `ivm_testdata` - Not required by the project, but included for a sample
+    folder of piqlFilm PNG images for testing.
+  - `rpmalloc` - Only used for release builds to improve the performance of
+    `malloc()` and friends (~3% from my tests).
+  - `stb` - `stb_image.h` used by unbox for image file reading.
+    `stb_image_write.h` used by raw_file_to_png for image file writing.
+  - `unboxing` - Decoding library for the boxing barcode format.
+- `dev` - Auxillary development tools, code and files.
+  - `build` - Auxillary code for `build.c`.
+- `out` - Output files of various kinds.
+  - `exe` - Built binaries by the project.
+  - `data` - Output folder for raw_file_to_png.
+- `src` - Project source code.
+- `build.c` - Project build script.
+
+## Preliminary plan for reading
 
 1. CLI arg #1: folder input
 2. Read folder, get all frame filenames
@@ -21,7 +43,7 @@
    1. Read all frames in file and write out to arg #2 (folder) as you read
    2. If any read or write fails, skip the file and start next file
 
-## notes
+### notes
 
 - Cache the last read frame between files, usually files overlap, and we don't
   want to unbox the same frame twice
