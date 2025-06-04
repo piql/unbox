@@ -1,9 +1,22 @@
 #if 0
-# Shell script for simpler building
+: <<E
+// clang-format off
+E
+
+# Shell script for simpler building with ./build.c
+
+# Flags:
+#   -DRELEASE - build in release mode
+#   -DTEST - test (run unbox)
+#   -DASAN - Enable address sanitizer (When not release mode)
+
 echo -e "\x1b[90mgcc -o $(basename $0 .c) "$@" $(basename $0)\x1b[0m"
+set -e
 gcc -o $(basename $0 .c) "$@" $(basename $0)
 ./$(basename $0 .c)
 exit $?
+
+// clang-format on
 #endif
 
 #include <stdio.h>
@@ -17,8 +30,12 @@ exit $?
 #elif 1
 #define CC "gcc"
 #define CC_DEFINES ""
+#ifdef ASAN
 #define CFLAGS                                                                 \
   " -g -fsanitize=address -Wall -Wextra -Wpedantic -Werror -std=c99"
+#else
+#define CFLAGS " -g -Wall -Wextra -Wpedantic -Werror -std=c99"
+#endif
 #elif 0
 #define CC "tcc"
 #define CC_DEFINES " -DSTBI_NO_SIMD"
