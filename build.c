@@ -264,7 +264,7 @@ int main(int argc, char *argv[]) {
 #else
         "./"
 #endif
-        "out/exe/unbox" BIN_EXT " reel out/huge");
+        "out/exe/unbox" BIN_EXT " dep/ivm_testdata/reel/png out/data");
   }
   return EXIT_SUCCESS;
 }
