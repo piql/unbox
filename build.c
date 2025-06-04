@@ -227,15 +227,13 @@ int main(int argc, char *argv[]) {
 #endif
   RUN("date; ls -lAh --color=always out/exe");
   if (has_arg(argc, argv, "run")) {
+    return RUN(
 #ifdef TARGET_WINDOWS
-    if (RUN("wine out/exe/unbox" BIN_EXT " dep/ivm_testdata/reel/png") == 0) {
+        "wine "
 #else
-    if (RUN("./out/exe/unbox" BIN_EXT
-            " ../../../../Documents/piqlAccess/png") == 0) {
-
+        "./"
 #endif
-      RUN("rm -r tiff tiff.tar");
-    }
+        "out/exe/unbox" BIN_EXT " reel out/huge");
   }
   return EXIT_SUCCESS;
 }

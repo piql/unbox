@@ -1,10 +1,16 @@
 #include "../src/grow.c"
 #include "../src/map_file.c"
+#include <endian.h>
 #include <inttypes.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+
+#define THREADED
+#ifdef THREADED
+#define THREAD_COUNT 6
+#endif
 
 typedef struct {
   uint64_t frame_id;
@@ -46,8 +52,9 @@ static void printFooter(const RawFileFooter *const f) {
 #include "../dep/stb/stb_image_write.h"
 
 static bool generateFramePng(const char *const restrict output_path,
-                             const uint8_t *const data, const uint32_t width,
-                             const uint32_t height, const uint8_t color_depth,
+                             const uint8_t *const restrict data,
+                             const uint32_t width, const uint32_t height,
+                             const uint8_t color_depth,
                              Slice *const output_image) {
   struct stat s;
   if (stat(output_path, &s) == 0)
@@ -66,11 +73,20 @@ static bool generateFramePng(const char *const restrict output_path,
   if (color_depth == 8)
     memcpy(out_data, data, frame_size);
   else if (color_depth == 2) {
-    for (unsigned i = 0; i < frame_size / 4; i++) {
+    for (unsigned i = 0; i < frame_size >> 2; i++) {
+#if BYTE_ORDER == LITTLE_ENDIAN
+      uint32_t x = data[i];
+      x |= x << 6;
+      x |= x << 12;
+      x &= 0x03030303;
+      x *= 85;
+      ((uint32_t *)out_data)[i] = x;
+#else
       out_data[i * 4 + 0] = ((data[i] & (3 << 0)) >> 0) * 85;
       out_data[i * 4 + 1] = ((data[i] & (3 << 2)) >> 2) * 85;
       out_data[i * 4 + 2] = ((data[i] & (3 << 4)) >> 4) * 85;
       out_data[i * 4 + 3] = ((data[i] & (3 << 6)) >> 6) * 85;
+#endif
     }
   } else if (color_depth == 1) {
     for (unsigned i = 0; i < frame_size / 8; i++) {
@@ -104,7 +120,9 @@ typedef struct {
   uint16_t count;
   uint16_t offset;
   bool done;
+#ifdef THREADED
   pthread_mutex_t mutex;
+#endif
 } PendingFrameGenerationJobList;
 
 void *frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
@@ -115,12 +133,16 @@ void *frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
   };
 
   for (;;) {
+#ifdef THREADED
     if (pthread_mutex_trylock(&job_list->mutex) == 0) {
-      // printf("got lock\n");
+// printf("got lock\n");
+#endif
       if (job_list->offset >= job_list->count) {
         bool done = job_list->done;
+#ifdef THREADED
         // printf("unlocking, no jobs, done: %u\n", done);
         pthread_mutex_unlock(&job_list->mutex);
+#endif
         if (done) {
           free(output_image.data);
           return NULL;
@@ -129,13 +151,15 @@ void *frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
       }
 
       FrameGenerationJob jobs[16];
-      uint8_t count =
-          min(countof(jobs), (uint16_t)(job_list->count - job_list->offset));
+      uint16_t jobs_left = job_list->count - job_list->offset;
+      uint8_t count = min(countof(jobs), jobs_left);
       memcpy(jobs, (FrameGenerationJob *)job_list->jobs.data + job_list->offset,
              sizeof *jobs * count);
       job_list->offset += count;
+#ifdef THREADED
       // printf("copied %u jobs, unlocking\n", count);
       pthread_mutex_unlock(&job_list->mutex);
+#endif
 
       bool ok = true;
       for (uint8_t j = 0; j < count; j++) {
@@ -145,23 +169,33 @@ void *frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
       }
       char status[256];
       int len =
-          snprintf(status, sizeof status, "%u...%u: %s\n", jobs[0].frame_id,
-                   jobs[count - 1].frame_id, ok ? "OK" : "FAIL");
+          snprintf(status, sizeof status, "%u...%u (%u) (jobs left: %u): %s\n",
+                   jobs[0].frame_id, jobs[count - 1].frame_id, count,
+                   jobs_left - count, ok ? "OK" : "FAIL");
       fwrite(status, 1, len, stdout);
+#ifdef THREADED
     }
+#endif
   }
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+  if (argc < 3) {
+    fprintf(stderr, "Usage: %s <input file (.raw)> <output folder path>\n",
+            argv[0]);
+    return EXIT_FAILURE;
+  }
   PendingFrameGenerationJobList job_list = {
       .jobs = {.data = NULL, .size = 0},
       .count = 0,
       .offset = 0,
       .done = false,
+#ifdef THREADED
       .mutex = PTHREAD_MUTEX_INITIALIZER,
+#endif
   };
 
-#define THREAD_COUNT 6
+#ifdef THREADED
   pthread_t threads[THREAD_COUNT];
   for (unsigned i = 0; i < THREAD_COUNT; i++) {
     if (pthread_create(&threads[i], NULL,
@@ -170,9 +204,13 @@ int main(void) {
       return EXIT_FAILURE;
     }
   }
+#endif
 
-  mkdir("reel2", 0755);
-  const Slice reel = mapFile("../../../../Documents/huge-reel/reel.raw");
+  const char *input_file = argv[1];
+  const char *folder_path = argv[2];
+
+  mkdir(folder_path, 0755);
+  const Slice reel = mapFile(input_file);
 
   const uint8_t *const ptr = (const uint8_t *)reel.data;
   size_t i = 0;
@@ -196,39 +234,55 @@ int main(void) {
     const RawFileFooter *const footer = (const RawFileFooter *)(ptr + i);
     i += sizeof *footer;
 
-    printHeader(header);
-    fwrite(" ", 1, 1, stdout);
-    printFooter(footer);
-    fwrite("\n", 1, 1, stdout);
+    (void)printHeader;
+    (void)printFooter;
+    // printHeader(header);
+    // fwrite(" ", 1, 1, stdout);
+    // printFooter(footer);
+    // fwrite("\n", 1, 1, stdout);
 
+#ifdef THREADED
     // printf("locking to add job\n");
     pthread_mutex_lock(&job_list.mutex);
+#endif
     if (!grow(&job_list.jobs.data, sizeof(FrameGenerationJob),
               &job_list.jobs.size, job_list.count + 1)) {
+#ifdef THREADED
       pthread_mutex_unlock(&job_list.mutex);
+#endif
       fprintf(stderr, "OOM\n");
       return EXIT_FAILURE;
     }
     FrameGenerationJob *job =
         (FrameGenerationJob *)(job_list.jobs.data) + job_list.count++;
-    snprintf(job->output_path, sizeof job->output_path,
-             "reel2/%05" PRIu64 ".png", header->frame_id);
+    snprintf(job->output_path, sizeof job->output_path, "%s/%05" PRIu64 ".png",
+             folder_path, header->frame_id);
     job->frame_id = header->frame_id;
     job->frame_data = data;
     job->width = header->frame_width;
     job->height = header->frame_height;
     job->color_depth = header->color_depth;
+#ifdef THREADED
     // printf("unlocking after adding job\n");
     pthread_mutex_unlock(&job_list.mutex);
+#endif
   }
+#ifdef THREADED
   // printf("locking to set done\n");
   pthread_mutex_lock(&job_list.mutex);
+#endif
   job_list.done = true;
+#ifdef THREADED
   // printf("unlocking after setting done\n");
   pthread_mutex_unlock(&job_list.mutex);
+#endif
 
+#ifdef THREADED
   for (unsigned i = 0; i < THREAD_COUNT; i++)
     pthread_join(threads[i], NULL);
+#else
+  frameGeneratorWorker(&job_list);
+#endif
 
   fflush(stdout);
   if (job_list.jobs.data)

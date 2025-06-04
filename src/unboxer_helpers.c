@@ -92,7 +92,7 @@ UnboxerUnbox(Unboxer *unboxer, uint8_t *image_data, uint32_t width,
     boxing_metadata_type type = (boxing_metadata_type) * (uint16_t *)k;
     boxing_metadata_item *item = (boxing_metadata_item *)v;
     off += snprintf(metadata_buf + off, sizeof(metadata_buf) - off,
-                    "%s%s: ", off ? "\x1b[0m, " : "Metadata: ",
+                    "%s%s: ", off ? "\x1b[0m, " : "",
                     boxing_metadata_type_str[type]);
     switch (type) {
     case BOXING_METADATA_TYPE_FRAMENUMBER:
@@ -132,9 +132,9 @@ UnboxerUnbox(Unboxer *unboxer, uint8_t *image_data, uint32_t width,
                       item->base.size);
     }
   }
-  boxing_log_args(BoxingLogLevelAlways, "%.*s\x1b[0m", (int)off, metadata_buf);
   boxing_log_args(BoxingLogLevelAlways,
-                  "unbox: extract: %s%s\x1b[0m, decode: %s%s\x1b[0m",
+                  "[%.*s\x1b[0m] extract: %s%s\x1b[0m, decode: %s%s\x1b[0m",
+                  (int)off, metadata_buf,
                   extract_result == BOXING_UNBOXER_OK         ? "\x1b[92m"
                   : extract_result == BOXING_UNBOXER_SPLICING ? "\x1b[93m"
                                                               : "\x1b[91m",

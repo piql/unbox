@@ -76,7 +76,8 @@ static bool writeEntireFile(const char *const restrict file_path, Slice data) {
 #endif
 
 static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
-                                Slice toc_contents) {
+                                Slice toc_contents,
+                                const char *const restrict output_folder) {
   afs_toc_data *toc = afs_toc_data_create();
   if (!toc)
     return false;
@@ -87,34 +88,43 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
   afs_toc_data_reel *data_reel = afs_toc_data_reels_get_reel(toc->reels, 0);
   unsigned files = afs_toc_data_reel_file_count(data_reel);
   char buf[4096];
-  int last_frame = -1;
-  Slice last_frame_data = Slice_empty;
   for (unsigned i = 0; i < files; i++) {
     afs_toc_file *file = afs_toc_data_reel_get_file_by_index(data_reel, i);
     if (!(file->types & AFS_TOC_FILE_TYPE_DIGITAL)) {
       printf("skipping non-digital file: %s\n", file->name);
       continue;
     }
-    printf("%d[%d]..%d[%d] %s (%s)\n", file->start_frame, file->start_byte,
-           file->end_frame, file->end_byte, file->name, file->checksum);
-    if (!reel->frames[file->start_frame]) {
-      if (last_frame_data.data)
-        free(last_frame_data.data);
+    printf("%d[%d]..%d[%d] (size: %" PRId64 ") %s (%s)\n", file->start_frame,
+           file->start_byte, file->end_frame, file->end_byte, file->size,
+           file->name, file->checksum);
+
+    if (file->end_frame - file->start_frame > 300) {
+      printf("skipping large file...\n");
+      continue;
+    }
+
+    char output_file_path[4096];
+    snprintf(output_file_path, sizeof output_file_path, "%s/%s", output_folder,
+             file->name);
+    ensurePathExists(output_file_path);
+    FILE *output_file = fopen(output_file_path, "w+b");
+
+    if (!output_file) {
       afs_toc_data_free(toc);
       return false;
     }
-    Slice frame_contents;
-    if (last_frame == file->start_frame && last_frame_data.data) {
-      frame_contents = last_frame_data;
-    } else {
+
+    size_t bytes_written = 0;
+    for (int f = file->start_frame; f <= file->end_frame; f++) {
+      if (!reel->frames[f]) {
+        afs_toc_data_free(toc);
+        return false;
+      }
+      Slice frame_contents;
       sprintf(buf, "%s/%s", reel->directory_path,
-              (const char *)reel->string_pool.data +
-                  reel->frames[file->start_frame] - 1);
-      printf("loading %s\n", buf);
+              (const char *)reel->string_pool.data + reel->frames[f] - 1);
       Image data_frame = loadImage(buf);
       if (!data_frame.data) {
-        if (last_frame_data.data)
-          free(last_frame_data.data);
         afs_toc_data_free(toc);
         return false;
       }
@@ -122,35 +132,25 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
       if (UnboxerUnbox(unboxer, data_frame.data, data_frame.width,
                        data_frame.height, BOXING_METADATA_CONTENT_TYPES_DATA,
                        &frame_contents) != UnboxOK) {
-        if (last_frame_data.data)
-          free(last_frame_data.data);
         afs_toc_data_free(toc);
         return false;
       }
-      last_frame = file->start_frame;
-      if (last_frame_data.data)
-        free(last_frame_data.data);
-      last_frame_data = frame_contents;
+      if (frame_contents.size) {
+        size_t bytes_to_write =
+            min(frame_contents.size, file->size - bytes_written);
+        fwrite((const char *)frame_contents.data, 1, bytes_to_write,
+               output_file);
+        free(frame_contents.data);
+        bytes_written += bytes_to_write;
+      }
     }
-    ensurePathExists(file->name);
-    FILE *output_file = fopen(file->name, "w+b");
-    if (!output_file) {
-      if (last_frame_data.data)
-        free(last_frame_data.data);
-      afs_toc_data_free(toc);
-      return false;
-    }
-    fwrite((const char *)frame_contents.data + file->start_byte, 1,
-           file->end_byte + 1 - file->start_byte, output_file);
     fclose(output_file);
 #ifndef _WIN32
-    char path[4096];
-    sprintf(path, "sha1sum %s", file->name);
+    char path[4104];
+    sprintf(path, "sha1sum %s", output_file_path);
     system(path);
 #endif
   }
-  if (last_frame_data.data)
-    free(last_frame_data.data);
   afs_toc_data_free(toc);
   return true;
 }
@@ -159,10 +159,18 @@ int main(int argc, char *argv[]) {
 #ifdef _WIN32
   SetConsoleOutputCP(CP_UTF8);
 #endif
-  if (argc < 2) {
-    boxing_log(BoxingLogLevelError, "Provide an input folder argument");
+  if (argc < 3) {
+    boxing_log_args(
+        BoxingLogLevelError,
+        "Usage: %s <input folder with scanned images> <output folder to "
+        "place unboxed files>\n",
+        argv[0]);
     return EXIT_FAILURE;
   }
+
+  const char *input_folder = argv[1];
+  const char *output_folder = argv[2];
+
   int status = EXIT_SUCCESS;
   dcrc64 *dcrc64 = boxing_math_crc64_create_def();
   if (!dcrc64) {
@@ -175,7 +183,7 @@ int main(int argc, char *argv[]) {
     boxing_log(BoxingLogLevelError, "Failed to create reel");
     return EXIT_FAILURE;
   }
-  if (!Reel_init(reel, argv[1])) {
+  if (!Reel_init(reel, input_folder)) {
     Reel_destroy(reel);
     boxing_math_crc64_free(dcrc64);
     boxing_log(
@@ -202,9 +210,10 @@ int main(int argc, char *argv[]) {
         uint64_t crc = boxing_math_crc64_calc_crc(
             dcrc64, control_frame_contents.data, control_frame_contents.size);
         boxing_math_crc64_reset(dcrc64, POLY_CRC_64);
+        mkdir(output_folder, 0755);
         char cachefile_path[4096];
         snprintf(cachefile_path, sizeof(cachefile_path),
-                 "control_frame_%" PRIx64 ".xml", crc);
+                 "%s/toc_%" PRIx64 ".xml", output_folder, crc);
         printf("checking for: %s\n", cachefile_path);
         Slice cached_toc_contents = mapFile(cachefile_path);
         if (cached_toc_contents.data) {
@@ -226,7 +235,8 @@ int main(int argc, char *argv[]) {
           }
         }
         if (toc_contents.data) {
-          if (!unboxAndOutputFiles(reel, &unboxer, toc_contents)) {
+          if (!unboxAndOutputFiles(reel, &unboxer, toc_contents,
+                                   output_folder)) {
             boxing_log(BoxingLogLevelError, "Failed to unbox / output files");
             status = EXIT_FAILURE;
           }
