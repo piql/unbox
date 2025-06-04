@@ -1,12 +1,19 @@
+#if 0
+# Shell script for simpler building
+echo -e "\x1b[90mgcc -o $(basename $0 .c) "$@" $(basename $0)\x1b[0m"
+gcc -o $(basename $0 .c) "$@" $(basename $0)
+./$(basename $0 .c)
+exit $?
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#if 0
+#ifdef RELEASE
 #define CC "gcc"
 #define CC_DEFINES ""
 #define CFLAGS " -O3 -s"
-#define RELEASE
 #elif 1
 #define CC "gcc"
 #define CC_DEFINES ""
@@ -226,7 +233,13 @@ int main(int argc, char *argv[]) {
     return cc_status;
 #endif
   RUN("date; ls -lAh --color=always out/exe");
-  if (has_arg(argc, argv, "run")) {
+  if (has_arg(argc, argv, "run") ||
+#ifdef TEST
+      true
+#else
+      false
+#endif
+  ) {
     return RUN(
 #ifdef TARGET_WINDOWS
         "wine "

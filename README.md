@@ -16,9 +16,15 @@
   - `build` - Auxillary code for `build.c`.
 - `out` - Output files of various kinds.
   - `exe` - Built binaries by the project.
-  - `data` - Output folder for raw_file_to_png.
 - `src` - Project source code.
 - `build.c` - Project build script.
+
+## Building
+
+```sh
+./build.c
+./build.c -DRELEASE
+```
 
 ## Preliminary plan for reading
 
