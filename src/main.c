@@ -154,6 +154,7 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
       }
     }
     fclose(output_file);
+    boxing_unboxer_reset(unboxer->unboxer);
 #ifndef _WIN32
     char path[4104];
     sprintf(path, "sha1sum %s", output_file_path);
@@ -161,8 +162,6 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
 #endif
   }
   afs_toc_data_free(toc);
-  // Attempt to fix DATA_DECODE_ERROR
-  // boxing_unboxer_reset(unboxer->unboxer);
   return true;
 }
 
