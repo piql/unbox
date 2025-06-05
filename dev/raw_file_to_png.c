@@ -9,7 +9,9 @@
 #include <endian.h>
 #endif
 #include <inttypes.h>
+#ifndef _WIN32
 #include <pthread.h>
+#endif
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -134,11 +136,19 @@ typedef struct {
   uint16_t offset;
   bool done;
 #ifdef THREADED
+#ifdef _WIN32
+  HANDLE mutex;
+#else
   pthread_mutex_t mutex;
+#endif
 #endif
 } PendingFrameGenerationJobList;
 
+#ifdef _WIN32
+uint32_t frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
+#else
 void *frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
+#endif
   // Reasonable initial guess for size
   Slice output_image = {
       .data = malloc(4096 * 2160),
@@ -147,18 +157,28 @@ void *frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
 
   for (;;) {
 #ifdef THREADED
+#ifdef _WIN32
+    if (WaitForSingleObject(job_list->mutex, 0) == WAIT_OBJECT_0) {
+#else
     if (pthread_mutex_trylock(&job_list->mutex) == 0) {
-// printf("got lock\n");
+#endif
 #endif
       if (job_list->offset >= job_list->count) {
         bool done = job_list->done;
 #ifdef THREADED
-        // printf("unlocking, no jobs, done: %u\n", done);
+#ifdef _WIN32
+        ReleaseMutex(job_list->mutex);
+#else
         pthread_mutex_unlock(&job_list->mutex);
+#endif
 #endif
         if (done) {
           free(output_image.data);
-          return NULL;
+#ifdef _WIN32
+          return 0;
+#else
+        return NULL;
+#endif
         } else
           continue;
       }
@@ -170,8 +190,11 @@ void *frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
              sizeof *jobs * count);
       job_list->offset += count;
 #ifdef THREADED
-      // printf("copied %u jobs, unlocking\n", count);
+#ifdef _WIN32
+      ReleaseMutex(job_list->mutex);
+#else
       pthread_mutex_unlock(&job_list->mutex);
+#endif
 #endif
 
       bool ok = true;
@@ -209,6 +232,17 @@ int main(int argc, char *argv[]) {
   };
 
 #ifdef THREADED
+#ifdef _WIN32
+  HANDLE threads[THREAD_COUNT];
+  for (unsigned i = 0; i < THREAD_COUNT; i++) {
+    HANDLE thread = CreateThread(NULL, 0, frameGeneratorWorker, NULL, 0, NULL);
+    if (thread == NULL) {
+      fprintf(stderr, "Failed to create thread\n");
+      return EXIT_FAILURE;
+    }
+    threads[i] = thread;
+  }
+#else
   pthread_t threads[THREAD_COUNT];
   for (unsigned i = 0; i < THREAD_COUNT; i++) {
     if (pthread_create(&threads[i], NULL,
@@ -217,6 +251,7 @@ int main(int argc, char *argv[]) {
       return EXIT_FAILURE;
     }
   }
+#endif
 #endif
 
   const char *input_file = argv[1];
@@ -259,13 +294,20 @@ int main(int argc, char *argv[]) {
     // fwrite("\n", 1, 1, stdout);
 
 #ifdef THREADED
-    // printf("locking to add job\n");
+#ifdef _WIN32
+    WaitForSingleObject(job_list.mutex, INFINITE);
+#else
     pthread_mutex_lock(&job_list.mutex);
+#endif
 #endif
     if (!grow(&job_list.jobs.data, sizeof(FrameGenerationJob),
               &job_list.jobs.size, job_list.count + 1)) {
 #ifdef THREADED
+#ifdef _WIN32
+      ReleaseMutex(job_list.mutex);
+#else
       pthread_mutex_unlock(&job_list.mutex);
+#endif
 #endif
       fprintf(stderr, "OOM\n");
       return EXIT_FAILURE;
@@ -280,23 +322,36 @@ int main(int argc, char *argv[]) {
     job->height = header->frame_height;
     job->color_depth = header->color_depth;
 #ifdef THREADED
-    // printf("unlocking after adding job\n");
+#ifdef _WIN32
+    ReleaseMutex(job_list.mutex);
+#else
     pthread_mutex_unlock(&job_list.mutex);
+#endif
 #endif
   }
 #ifdef THREADED
-  // printf("locking to set done\n");
+#ifdef _WIN32
+  WaitForSingleObject(job_list.mutex, INFINITE);
+#else
   pthread_mutex_lock(&job_list.mutex);
+#endif
 #endif
   job_list.done = true;
 #ifdef THREADED
-  // printf("unlocking after setting done\n");
+#ifdef _WIN32
+  ReleaseMutex(job_list.mutex);
+#else
   pthread_mutex_unlock(&job_list.mutex);
+#endif
 #endif
 
 #ifdef THREADED
+#ifdef _WIN32
+  WaitForMultipleObjects(THREAD_COUNT, threads, TRUE, INFINITE);
+#else
   for (unsigned i = 0; i < THREAD_COUNT; i++)
     pthread_join(threads[i], NULL);
+#endif
 #else
   frameGeneratorWorker(&job_list);
 #endif
