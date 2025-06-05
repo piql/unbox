@@ -1,6 +1,8 @@
 dat
 out
+.vs
 .vscode
 **control_frame_*.xml
 reel
 build
+build.exe
