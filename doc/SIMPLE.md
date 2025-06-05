@@ -117,4 +117,4 @@ every file off of the film in sequence.
 
 For more information about using the
 [unboxing library](https://github.com/piql/unboxing) you can refer to the
-[detailed documentation](DETAILED.md)
+[detailed documentation](DETAILED.md).
