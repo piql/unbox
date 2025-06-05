@@ -24,7 +24,7 @@ jobs:
       - name: Build
         if: ${{ matrix.os == 'windows-2025' }}
         run: |
-          cmd.exe /c ""C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" && cl build.c && build.exe
+          cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" && cl build.c && build.exe"
       - name: Test
         if: ${{ matrix.os == 'ubuntu-24.04' }}
         run: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
