@@ -145,7 +145,7 @@ typedef struct {
 } PendingFrameGenerationJobList;
 
 #ifdef _WIN32
-uint32_t frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
+uint32_t WINAPI frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
 #else
 void *frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
 #endif
@@ -227,7 +227,11 @@ int main(int argc, char *argv[]) {
       .offset = 0,
       .done = false,
 #ifdef THREADED
+#ifdef _WIN32
+      .mutex = CreateMutexA(NULL, FALSE, NULL),
+#else
       .mutex = PTHREAD_MUTEX_INITIALIZER,
+#endif
 #endif
   };
 
