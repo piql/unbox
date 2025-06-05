@@ -77,7 +77,7 @@ that make up the table of contents.
 
 The Table of Contents file may be stored multiple times on the film for
 redundancy (for instance at the beginning and at the end), in which case you
-should attempt to read them one-by-one All table of contents file locations
+should attempt to read them one-by-one. All table of contents file locations
 contain the same file. Without the information in the table of contents file, it
 will be hard to figure out the boundaries of other files on the film, and
 restoring data will be more difficult.
@@ -98,7 +98,10 @@ follows:
 ```txt
 for each frame from the starting frame to the ending frame:
     decode the frame:
-      - skip over any bytes of the decoded frame if necessary to get to the `start_byte`
+      - if `start_byte` is non-zero:
+        - skip over any bytes of the decoded frame until you have skipped `start_byte` amount of bytes forward
+          (You may also need to skip forward into the next frame(s) if
+          `start_byte` is larger than the total size of the frame)
       - collect the remaining bytes from the frame until
         you have collected all bytes up to the `size` of the table of contents (in total)
 assemble all your collected bytes into the final file.
@@ -112,5 +115,6 @@ list of all the files including their `size`, `start_frame`, `end_frame`,
 `start_byte`, `end_byte`, and `checksum`. Using this information you can decode
 every file off of the film in sequence.
 
-For more information about using the unboxing library you can refer to the
+For more information about using the
+[unboxing library](https://github.com/piql/unboxing) you can refer to the
 [detailed documentation](DETAILED.md)
