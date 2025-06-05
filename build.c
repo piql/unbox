@@ -32,7 +32,7 @@ exit $?
 #elif !defined(TARGET_WINDOWS)
 #define CC "gcc"
 #define CC_DEFINES ""
-#ifdef ASAN
+#if defined(ASAN)
 #define CFLAGS                                                                 \
   " -g -fsanitize=address -Wall -Wextra -Wpedantic -Werror -std=c99"
 #else
@@ -63,7 +63,7 @@ exit $?
 
 #include "dev/build/util.c" // uses TARGET_WINDOWS
 
-#ifdef RELEASE
+#if defined(RELEASE)
 #define UNBOXING_DEFINES " -DRAND_FILE='\"randfile\"'"
 #else
 #define UNBOXING_DEFINES " -D_DEBUG -DRAND_FILE='\"randfile\"'"
@@ -209,7 +209,7 @@ exit $?
 
 #define DEFINES CC_DEFINES UNBOXING_DEFINES
 #define INCLUDES UNBOXING_INCLUDES AFS_INCLUDES MXML_INCLUDES
-#ifdef RELEASE
+#if defined(RELEASE)
 #define SOURCES RPMALLOC_SOURCES UNBOXING_SOURCES AFS_SOURCES MXML_SOURCES
 #else
 #define SOURCES UNBOXING_SOURCES AFS_SOURCES MXML_SOURCES
@@ -226,7 +226,7 @@ bool has_arg(int argc, char *argv[], const char *arg) {
   return false;
 }
 
-#ifdef TARGET_WINDOWS
+#if defined(TARGET_WINDOWS)
 #define BIN_EXT ".exe"
 #else
 #define BIN_EXT ""
@@ -251,14 +251,14 @@ int main(int argc, char *argv[]) {
     return cc_status;
   RUN("date; ls -lAh --color=always out/exe");
   if (has_arg(argc, argv, "run") ||
-#ifdef TEST
+#if defined(TEST)
       true
 #else
       false
 #endif
   ) {
     return RUN(
-#ifdef TARGET_WINDOWS
+#if defined(TARGET_WINDOWS)
         "wine "
 #else
         "./"
