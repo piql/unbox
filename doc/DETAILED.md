@@ -28,6 +28,7 @@ search paths, as well as the
 
 ```c
 #include <boxing/config.h>
+#include <boxing/unboxer.h>
 #include <config_source_4k_controlframe_v7.h>
 ```
 
@@ -53,3 +54,41 @@ Finally we will be able to construct an unboxer object:
 ```c
 boxing_unboxer *unboxer = boxing_unboxer_create(&parameters);
 ```
+
+<!-- TODO: why are we creating this? -->
+
+In order to unbox we also need to create a `boxing_metadata_list`:
+
+```c
+boxing_metadata_list *metadata_list = boxing_metadata_list_create();
+```
+
+Finally we'll be able to run the unboxer to decode a frame:
+
+```c
+boxing_image8 image = {
+    .width = (width of the image),
+    .height = (height of the image),
+    .is_owning_data = DFALSE,
+    .data = (image data),
+};
+gvector data = {
+    .buffer = NULL,
+    .size = 0,
+    .item_size = 1,
+    .element_free = NULL,
+};
+int extract_result;
+int decode_result = boxing_unboxer_unbox(&data, metadata_list, &image, unboxer, &extract_result, NULL, BOXING_METADATA_CONTENT_TYPES_CONTROLFRAME);
+```
+
+- `image` is your image input data as an array of grayscale pixels, and width
+  and height in pixels.
+- `data` is the output vector that will be filled with the decoded frame data.
+- `extract_result` is the result of extracting the inner data from the container
+  (see
+  [Format description on Wikipedia](https://en.wikipedia.org/wiki/Boxing_barcode#Format))
+  and decoding the metadata bar.
+- `decode_result` is the result of decoding the data.
+
+(In progress...)
