@@ -133,11 +133,10 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
       }
       if (frame_contents.size) {
         size_t start = 0;
-        if (bytes_to_skip) {
+        if (bytes_to_skip)
           start = min(frame_contents.size, bytes_to_skip);
-        }
-        if (start < frame_contents.size) {
 
+        if (start < frame_contents.size) {
           size_t bytes_to_write =
               min(frame_contents.size - start, file->size - bytes_written);
           fwrite((const char *)frame_contents.data + start, 1, bytes_to_write,

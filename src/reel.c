@@ -126,7 +126,7 @@ Slice Reel_unbox_control_frame(Reel *reel, bool *is_raw) {
 Slice Reel_unbox_toc(Reel *reel, Unboxer *unboxer, afs_toc_file *toc) {
   char buf[4096];
   Slice toc_contents = Slice_empty;
-  for (int f = toc->start_frame; f < toc->end_frame + 1; f++) {
+  for (int f = toc->start_frame; f <= toc->end_frame; f++) {
     if (!reel->frames[f])
       return Slice_empty;
     {

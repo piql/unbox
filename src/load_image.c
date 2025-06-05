@@ -105,6 +105,7 @@ static void image_free(const void *const p) {
 #define STBI_FREE(p) image_free(p)
 
 #define STBI_FAILURE_USERMSG
+#define STBI_NO_STDIO
 #define STB_IMAGE_IMPLEMENTATION
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
