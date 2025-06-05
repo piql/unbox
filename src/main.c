@@ -98,11 +98,6 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
            file->start_byte, file->end_frame, file->end_byte, file->size,
            file->name, file->checksum);
 
-    if (file->end_frame - file->start_frame > 300) {
-      printf("skipping large file...\n");
-      continue;
-    }
-
     char output_file_path[4096];
     snprintf(output_file_path, sizeof output_file_path, "%s/%s", output_folder,
              file->name);
