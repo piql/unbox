@@ -257,13 +257,11 @@ int main(int argc, char *argv[]) {
       false
 #endif
   ) {
-    return RUN(
 #if defined(TARGET_WINDOWS)
-        "wine "
+    return RUN("wine out/exe/unbox" BIN_EXT
+               " dep/ivm_testdata/reel/png out/data");
 #else
-        "./"
+    return RUN("./out/exe/unbox" BIN_EXT " dep/ivm_testdata/reel/png out/data");
 #endif
-        "out/exe/unbox" BIN_EXT " dep/ivm_testdata/reel/png out/data");
+    return EXIT_SUCCESS;
   }
-  return EXIT_SUCCESS;
-}
