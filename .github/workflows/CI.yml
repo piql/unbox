@@ -9,7 +9,7 @@ jobs:
         include:
           - os: ubuntu-24.04
             image: gcc:15.1.0
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.os }}
     container: ${{ matrix.image || '' }}
     steps:
       - name: Checkout
