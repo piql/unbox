@@ -29,6 +29,7 @@ exit $?
 #define CC "cl"
 #define CC_DEFINES ""
 #define CFLAGS ""
+#define TARGET_WINDOWS
 #elif defined(RELEASE) && !defined(TARGET_WINDOWS)
 #define CC "gcc"
 #define CC_DEFINES ""
