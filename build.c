@@ -263,5 +263,6 @@ int main(int argc, char *argv[]) {
 #else
     return RUN("./out/exe/unbox" BIN_EXT " dep/ivm_testdata/reel/png out/data");
 #endif
-    return EXIT_SUCCESS;
   }
+  return EXIT_SUCCESS;
+}
