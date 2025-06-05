@@ -223,7 +223,7 @@ exit $?
 #if defined(_WIN32)
 #define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
   SYSTEM_WITH_LOG(cc defines includes sources lflags cflags                    \
-                  " /link /out:" output " && del *.obj")
+                  " /link /out:" output " & del *.obj")
 #else
 #define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
   SYSTEM_WITH_LOG(cc defines includes sources lflags cflags " -o " output)
