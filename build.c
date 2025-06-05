@@ -6,9 +6,10 @@ E
 # Shell script for simpler building with ./build.c
 
 # Flags:
-#   -DRELEASE - build in release mode
-#   -DTEST - test (run unbox)
+#   -DRELEASE - Build in release mode
+#   -DTEST - Test (run unbox)
 #   -DASAN - Enable address sanitizer (When not release mode)
+#   -DTARGET_WINDOWS - Build for Windows (Requires `zig` in path)
 
 echo -e "\x1b[90mgcc -o $(basename $0 .c) "$@" $(basename $0)\x1b[0m"
 set -e
@@ -24,11 +25,11 @@ exit $?
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#ifdef RELEASE
+#if defined(RELEASE) && !defined(TARGET_WINDOWS)
 #define CC "gcc"
 #define CC_DEFINES ""
 #define CFLAGS " -O3 -s"
-#elif 1
+#elif !defined(TARGET_WINDOWS)
 #define CC "gcc"
 #define CC_DEFINES ""
 #ifdef ASAN
@@ -37,28 +38,27 @@ exit $?
 #else
 #define CFLAGS " -g -Wall -Wextra -Wpedantic -Werror -std=c99"
 #endif
-#elif 0
+#elif defined(TCC)
 #define CC "tcc"
 #define CC_DEFINES " -DSTBI_NO_SIMD"
 #define CFLAGS " -I$(dirname $(which tcc))/include -L$(dirname $(which tcc))"
-#elif 0
+#elif defined(ZIGCC)
 #define CC "zig cc"
 #define CC_DEFINES ""
 #define CFLAGS                                                                 \
   " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
-#elif 0
+#elif defined(RELEASE) && defined(TARGET_WINDOWS)
 #define CC "zig cc"
 #define CC_DEFINES ""
-#define RELEASE
-#define TARGET_WINDOWS
 #define CFLAGS " -O3 -s -target x86_64-windows"
-#else
+#elif defined(TARGET_WINDOWS)
 #define CC "zig cc"
 #define CC_DEFINES ""
-#define TARGET_WINDOWS
 #define CFLAGS                                                                 \
   " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -target "         \
   "x86_64-windows"
+#else
+#error unreachable
 #endif
 
 #include "dev/build/util.c" // uses TARGET_WINDOWS
@@ -240,16 +240,15 @@ int main(int argc, char *argv[]) {
   writeVSCodeInfo(INCLUDES, DEFINES);
 #endif
 
-  int cc_status = COMPILE(CC, DEFINES, INCLUDES, SOURCES " src/main.c",
-                          "out/exe/unbox" BIN_EXT, CFLAGS, UNBOXING_LINK);
-  if (cc_status != 0)
-    return cc_status;
-#ifndef TARGET_WINDOWS
+  int cc_status;
   cc_status = COMPILE(CC, "", "", " dev/raw_file_to_png.c",
-                      "out/exe/raw_file_to_png", CFLAGS, "");
+                      "out/exe/raw_file_to_png" BIN_EXT, CFLAGS, "");
   if (cc_status != 0)
     return cc_status;
-#endif
+  cc_status = COMPILE(CC, DEFINES, INCLUDES, SOURCES " src/main.c",
+                      "out/exe/unbox" BIN_EXT, CFLAGS, UNBOXING_LINK);
+  if (cc_status != 0)
+    return cc_status;
   RUN("date; ls -lAh --color=always out/exe");
   if (has_arg(argc, argv, "run") ||
 #ifdef TEST

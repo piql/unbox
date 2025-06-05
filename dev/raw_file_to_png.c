@@ -1,6 +1,13 @@
 #include "../src/grow.c"
 #include "../src/map_file.c"
+#ifdef _WIN32
+#include <direct.h>
+#include <windows.h>
+#define BYTE_ORDER 1234
+#define LITTLE_ENDIAN 1234
+#else
 #include <endian.h>
+#endif
 #include <inttypes.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -56,9 +63,15 @@ static bool generateFramePng(const char *const restrict output_path,
                              const uint32_t width, const uint32_t height,
                              const uint8_t color_depth,
                              Slice *const output_image) {
+#ifdef _WIN32
+  DWORD attr = GetFileAttributesA(output_path);
+  if (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY))
+    return true;
+#else
   struct stat s;
   if (stat(output_path, &s) == 0)
     return true;
+#endif
 
   const size_t frame_size = width * height;
   if (output_image->size < frame_size) {
@@ -209,7 +222,11 @@ int main(int argc, char *argv[]) {
   const char *input_file = argv[1];
   const char *folder_path = argv[2];
 
+#ifdef _WIN32
+  mkdir(folder_path);
+#else
   mkdir(folder_path, 0755);
+#endif
   const Slice reel = mapFile(input_file);
 
   const uint8_t *const ptr = (const uint8_t *)reel.data;
