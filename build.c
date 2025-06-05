@@ -222,11 +222,11 @@ exit $?
 
 #if defined(_WIN32)
 #define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
-  SYSTEM_WITH_LOG(cc defines includes sources lflags cflags " -o " output)
-#else
-#define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
   SYSTEM_WITH_LOG(cc defines includes sources lflags cflags                    \
                   " /link /out:" output)
+#else
+#define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
+  SYSTEM_WITH_LOG(cc defines includes sources lflags cflags " -o " output)
 #endif
 
 bool has_arg(int argc, char *argv[], const char *arg) {
