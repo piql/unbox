@@ -98,8 +98,9 @@ follows:
 ```txt
 for each frame from the starting frame to the ending frame:
     decode the frame:
-        skip over any bytes of the decoded frame if necessary to get to the `start_byte`
-        collect the remaining bytes from the frame until you have collected all bytes up to the `size` of the table of contents (in total)
+      - skip over any bytes of the decoded frame if necessary to get to the `start_byte`
+      - collect the remaining bytes from the frame until
+        you have collected all bytes up to the `size` of the table of contents (in total)
 assemble all your collected bytes into the final file.
 You may verify the file contents by calculating its SHA1 checksum.
 ```
