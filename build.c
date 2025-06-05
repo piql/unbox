@@ -25,7 +25,11 @@ exit $?
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#if defined(RELEASE) && !defined(TARGET_WINDOWS)
+#if defined(_WIN32)
+#define CC "cl"
+#define CC_DEFINES ""
+#define CFLAGS ""
+#elif defined(RELEASE) && !defined(TARGET_WINDOWS)
 #define CC "gcc"
 #define CC_DEFINES ""
 #define CFLAGS " -O3 -s"
