@@ -22,7 +22,10 @@ or other image formats.
 The zero-reference mark frame looks like this (inverted, so on a physical film
 you would expect a black square in the top right corner):
 
-![Zero-reference Mark](../dep/ivm_testdata/reel/png/000000.png)
+<!-- Generated with `convert dep/ivm_testdata/reel/png/000000.png -resize 1024x540 doc/i
+mg/zero_reference_mark.webp` -->
+
+![Zero-reference Mark](img/zero_reference_mark.webp)
 
 After finding the zero-reference mark, you can turn the film and number each
 following frame by incrementing your image name.
@@ -31,7 +34,10 @@ The following frame after the zero-reference mark should be the control frame
 (so the control frame should be numbered "1" or "000001" or similar). The
 control frame looks like this:
 
-![Control Frame](../dep/ivm_testdata/reel/png/000001.png)
+<!-- Generated with `convert dep/ivm_testdata/reel/png/000001.png -resize 1024x540 doc/i
+mg/control_frame.webp` -->
+
+![Control Frame](img/control_frame.webp)
 
 There is also some helpful text in the frame margin (in this case
 "4k-controlframe-v7").
