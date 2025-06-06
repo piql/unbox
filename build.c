@@ -143,7 +143,8 @@ int main(int argc, char *argv[]) {
   Slice line;
   FILE *c = fopen("dev/doc_example_program.c", "w+b");
   while (nextCodeLine(&it, &line)) {
-    fwrite(line.data, 1, line.size, c);
+    size_t written = fwrite(line.data, 1, line.size, c);
+    printf("fwrite(%p, 1, %zu, %p): %zu\n", line.data, line.size, (void *)c, written);
     fputc('\n', c);
   }
   fflush(c);
