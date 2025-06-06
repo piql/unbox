@@ -146,12 +146,13 @@ int main(int argc, char *argv[]) {
     fwrite(line.data, 1, line.size, c);
     fputc('\n', c);
   }
+  fflush(c);
   fclose(c);
   unmapFile(doc);
   int cc_status;
 #ifdef _WIN32
-  cc_status = COMPILE(CC, "", UNBOXING_INCLUDES, " dev/doc_example_program.c",
-                      "out/exe/doc_example_program" BIN_EXT, CFLAGS, LFLAGS);
+  cc_status = COMPILE(CC, "", "", " dev/doc_example_program.c",
+                      "out/exe/doc_example_program" BIN_EXT, "", "");
 #else
   cc_status = COMPILE(CC, DEFINES, UNBOXING_INCLUDES,
                       UNBOXING_SOURCES " dev/doc_example_program.c",
