@@ -86,7 +86,8 @@ exit $?
 #include "dev/build/rpmalloc.h"
 #include "dev/build/unboxing.h"
 
-#define SYSTEM_WITH_LOG(cmd) (printf("\x1b[90m%s\x1b[0m\n", cmd), system(cmd))
+#define SYSTEM_WITH_LOG(cmd)                                                   \
+  (printf("\x1b[90m%s\x1b[0m\n", cmd), fflush(stdout), system(cmd))
 
 #define RUN(exe) SYSTEM_WITH_LOG(exe)
 
