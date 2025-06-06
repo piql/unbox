@@ -107,10 +107,14 @@ static void image_free(const void *const p) {
 #define STBI_FAILURE_USERMSG
 #define STBI_NO_STDIO
 #define STB_IMAGE_IMPLEMENTATION
+#ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+#endif
 #include "../dep/stb/stb_image.h"
+#ifdef __GNUC__
 #pragma GCC diagnostic pop
+#endif
 
 typedef struct {
   unsigned char *data;

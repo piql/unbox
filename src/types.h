@@ -1,8 +1,12 @@
 #ifndef UNBOX_CLI_TYPES_H
 #define UNBOX_CLI_TYPES_H
 
+#ifndef min
 #define min(x, y) ((y) < (x) ? (y) : (x))
+#endif
+#ifndef max
 #define max(x, y) ((x) < (y) ? (y) : (x))
+#endif
 #define clamp(x, lo, hi) ((x) < (lo) ? (lo) : (hi) < (x) ? (hi) : (x))
 #define countof(x) (sizeof(x) / sizeof *(x))
 
