@@ -234,7 +234,7 @@ exit $?
 #ifdef _WIN32
 #define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
   SYSTEM_WITH_LOG(cc defines includes sources lflags cflags                    \
-                  " /link /out:" output " & del *.obj")
+                  " /link /out:" output)
 #else
 #define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
   SYSTEM_WITH_LOG(cc defines includes sources lflags cflags " -o " output)
@@ -269,6 +269,9 @@ int main(int argc, char *argv[]) {
     return cc_status;
   cc_status = COMPILE(CC, DEFINES, INCLUDES, SOURCES " src/main.c",
                       "out/exe/unbox" BIN_EXT, CFLAGS, LFLAGS);
+#ifdef _WIN32
+  RUN('del *.obj');
+#endif
   if (cc_status != 0)
     return cc_status;
 #ifndef _WIN32
