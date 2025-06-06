@@ -5,6 +5,7 @@
 #include <windows.h>
 #define BYTE_ORDER 1234
 #define LITTLE_ENDIAN 1234
+#elif defined(__APPLE__)
 #else
 #include <endian.h>
 #endif

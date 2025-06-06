@@ -34,6 +34,12 @@ exit $?
 #define CC "gcc"
 #define CC_DEFINES ""
 #define CFLAGS " -O3 -s"
+#elif defined(TARGET_MACOS)
+#define CC "zig cc"
+#define CC_DEFINES ""
+#define CFLAGS                                                                 \
+  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -target "         \
+  "x86_64-macos"
 #elif !defined(TARGET_WINDOWS)
 #define CC "gcc"
 #define CC_DEFINES ""
