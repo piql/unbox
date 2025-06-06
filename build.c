@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
                                    .in_code_block = false};
   size_t n = 0;
   Slice line;
-  FILE *c = fopen("dev/tmp.c", "w");
+  FILE *c = fopen("dev/tmp.c", "w+b");
   while (nextCodeLine(&it, &line)) {
     fwrite(line.data, 1, line.size, c);
 #ifdef _WIN32
