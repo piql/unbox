@@ -52,7 +52,7 @@ search paths, as well as the
 ```c
 #include <boxing/config.h>
 #include <boxing/unboxer.h>
-#include <config_source_4k_controlframe_v7.h>
+#include "../dep/unboxing/tests/testutils/src/config_source_4k_controlframe_v7.h"
 ```
 
 You must also define some logging functions for unboxing to function correctly:
