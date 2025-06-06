@@ -6,10 +6,33 @@ project setup, but for now it will only focus on usage in code.
 
 All code snippets are in C99.
 
+## Preliminary information about data types
+
+- `config_structure` is the format used to store boxing formats / configurations
+  in code source files, meaning the machine-readable description of how a
+  specific type of digital frame is encoded (including all error correction,
+  synchronization points, striping, etc.).
+- `boxing_config` is the structure used to store boxing formats in-memory.
+- `boxing_unboxer_parameters`is the structure used to store the parameters
+  (options) used to create an unboxer instance.
+- `boxing_unboxer` is the handle to an instantiated unboxer object, which is
+  used to decode frames. It is configured for a specific type of frames, exists
+  in-memory, and holds state across decodings in the case of striped frames.
+- `boxing_metadata_list` is a hashmap that holds a list of metadata entries from
+  the structural metadata bar (see
+  [Boxing barcode - Format](https://en.wikipedia.org/wiki/Boxing_barcode#Format)).
+- `boxing_image8` is a basic image container which stores a width, height, and
+  pixel data.
+- `gvector` is a basic untyped dynamic array to store a growable list of items.
+  For unboxing this will be used to store the resultant data from decoding
+  frames.
+
+<!-- FUTURE: Section on build setup here? -->
+
 ## Initialization for unboxing the control frame
 
 In order to initialize an unboxer we first need to construct a
-`boxing_unboxer_parameters` object. In order to create a
+`boxing_unboxer_parameters` object. In order to create a useful
 `boxing_unboxer_parameters` object, we first need to create a `boxing_config`
 object. The `boxing_config` object is what defines the format we are unboxing
 for. This means that unboxing a new format implies creating a new unboxer.
@@ -31,6 +54,52 @@ search paths, as well as the
 #include <boxing/unboxer.h>
 #include <config_source_4k_controlframe_v7.h>
 ```
+
+You must also define some logging functions for unboxing to function correctly:
+
+<!-- TODO: expand more on boxing_log -->
+
+```c
+#include <stdarg.h>
+#include <stdio.h>
+
+enum BoxingLogLevel {
+  BoxingLogLevelInfo = 0,
+  BoxingLogLevelWarning = 1,
+  BoxingLogLevelError = 2,
+  BoxingLogLevelFatal = 3,
+  BoxingLogLevelAlways = 4,
+};
+
+static const char *boxing_log_level_str[] = {
+    "INFO   ", "WARNING",
+    "ERROR  ", "FATAL  ",
+    "DEBUG  ",
+};
+
+void boxing_log(const enum BoxingLogLevel level,
+                const char *const restrict str) {
+  fprintf(stderr, "%s: %s\n", boxing_log_level_str[level], str);
+}
+
+void boxing_log_args(const enum BoxingLogLevel level,
+                     const char *const restrict fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  char buf[4096];
+  const int len = vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+  fprintf(stderr, "%s: %.*s\n", boxing_log_level_str[level], len, buf);
+}
+```
+
+<!--
+```c
+#define STB_IMAGE_IMPLEMENTATION
+#include "../dep/stb/stb_image.h"
+int main(void) {
+```
+-->
 
 Then we can initialize a `boxing_config` using the control frame data:
 
@@ -63,14 +132,30 @@ In order to unbox we also need to create a `boxing_metadata_list`:
 boxing_metadata_list *metadata_list = boxing_metadata_list_create();
 ```
 
+<!--
+```c
+unsigned int IMAGE_WIDTH;
+unsigned int IMAGE_HEIGHT;
+unsigned char *IMAGE_DATA;
+{
+  int width;
+  int height;
+  unsigned char *data = stbi_load("dep/ivm_testdata/reel/png/000001.png", &width, &height, NULL, 1);
+  IMAGE_WIDTH = (unsigned)width;
+  IMAGE_HEIGHT = (unsigned)height;
+  IMAGE_DATA = data;
+}
+```
+-->
+
 Finally we'll be able to run the unboxer to decode a frame:
 
 ```c
 boxing_image8 image = {
-    .width = (width of the image),
-    .height = (height of the image),
+    .width = IMAGE_WIDTH,
+    .height = IMAGE_HEIGHT,
     .is_owning_data = DFALSE,
-    .data = (image data),
+    .data = IMAGE_DATA,
 };
 gvector data = {
     .buffer = NULL,
@@ -92,3 +177,9 @@ int decode_result = boxing_unboxer_unbox(&data, metadata_list, &image, unboxer, 
 - `decode_result` is the result of decoding the data.
 
 (In progress...)
+
+<!--
+```c
+}
+```
+-->

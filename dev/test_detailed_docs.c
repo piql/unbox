@@ -1,0 +1,71 @@
+#include "../src/map_file.c"
+#include "build/unboxing_defines.h"
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct {
+  Slice data;
+  size_t i;
+} LineIterator;
+
+bool nextLine(LineIterator *it, Slice *line) {
+  if (it->i >= it->data.size)
+    return false;
+  size_t i;
+  for (i = it->i; i < it->data.size; i++) {
+    if (((char *)it->data.data)[i] == '\n') {
+      *line = (Slice){.data = it->data.data + it->i, .size = i - it->i};
+      it->i = i + 1;
+      return true;
+    }
+  }
+  if (it->i == i)
+    return false;
+  *line = (Slice){.data = it->data.data + it->i, .size = i - it->i};
+  it->i = i + 1;
+  return true;
+}
+
+typedef struct {
+  LineIterator lit;
+  bool in_code_block;
+} MarkdownCodeBlockIteratorC;
+
+bool nextCodeLine(MarkdownCodeBlockIteratorC *it, Slice *code_line) {
+  Slice line;
+  while (nextLine(&it->lit, &line)) {
+    if (it->in_code_block) {
+      if (line.size == 3 && strncmp(line.data, "```", 3) == 0) {
+        it->in_code_block = false;
+        continue;
+      }
+      *code_line = line;
+      return true;
+    } else if (line.size == 4 && strncmp(line.data, "```c", 4) == 0)
+      it->in_code_block = true;
+  }
+  return false;
+}
+
+int main(void) {
+  Slice doc = mapFile("doc/DETAILED.md");
+  MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
+                                   .in_code_block = false};
+  size_t n = 0;
+  Slice line;
+  FILE *c = fopen("dev/tmp.c", "w");
+  while (nextCodeLine(&it, &line)) {
+    fwrite(line.data, 1, line.size, c);
+    fputc('\n', c);
+  }
+  fclose(c);
+  system("gcc"
+         " -Idep/unboxing/tests/testutils/src" UNBOXING_DEFINES
+             UNBOXING_INCLUDES UNBOXING_SOURCES " dev/tmp.c" UNBOXING_LINK
+         " -o dev/tmp");
+  system("rm dev/tmp.c");
+  system("./dev/tmp");
+  system("rm dev/tmp");
+  return 0;
+}
