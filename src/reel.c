@@ -6,13 +6,11 @@
 
 #include "../dep/unboxing/tests/testutils/src/config_source_4k_controlframe_v7.h"
 #include "grow.c"
+#include "iterate_dir.c"
 #include "load_image.c"
 #include "types.h"
 #include "unboxer_helpers.c"
 #include <boxing/config.h>
-#ifndef _WIN32
-#include <dirent.h>
-#endif
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -31,31 +29,31 @@ bool Reel_init(Reel *reel,
                const char *const
                    directory_path // path to directory containing scanned photos
 ) {
-  DIR *d = opendir(directory_path);
-  if (!d)
+  DirIterator it;
+  if (!dir_start(directory_path, &it))
     return false;
-  struct dirent *ent;
-  while ((ent = readdir(d))) {
-    size_t name_len = strlen(ent->d_name);
-    char *name_end = ent->d_name + strlen(ent->d_name);
-    long id = strtol(ent->d_name, &name_end, 10);
-    if (name_end == ent->d_name)
+  DirEntry ent;
+  while (dir_next(&it, &ent)) {
+    size_t name_len = strlen(ent.name);
+    char *name_end = ent.name + strlen(ent.name);
+    long id = strtol(ent.name, &name_end, 10);
+    if (name_end == ent.name)
       continue;
     if (id >= 0 && (unsigned long)id < countof(reel->frames)) {
       if (!grow((void **)&reel->string_pool, 1, &reel->string_pool.size,
                 reel->string_pool_used + name_len + 1)) {
-        closedir(d);
+        dir_end(&it);
         return false;
       }
       uint32_t str_start = reel->string_pool_used + 1;
-      memcpy((char *)reel->string_pool.data + reel->string_pool_used,
-             ent->d_name, name_len + 1);
+      memcpy((char *)reel->string_pool.data + reel->string_pool_used, ent.name,
+             name_len + 1);
       reel->string_pool_used += name_len + 1;
       reel->frames[id] = str_start;
       reel->count++;
     }
   }
-  closedir(d);
+  dir_end(&it);
   if (!reel->count)
     return false;
   reel->directory_path = directory_path;
