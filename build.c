@@ -135,7 +135,9 @@ int main(int argc, char *argv[]) {
   mkdir(".vscode", 0755);
   writeVSCodeInfo(INCLUDES, DEFINES);
 #endif
+  int cc_status;
 
+#ifndef _WIN32
   Slice doc = mapFile("doc/DETAILED.md");
   MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
                                    .in_code_block = false};
@@ -143,14 +145,12 @@ int main(int argc, char *argv[]) {
   Slice line;
   FILE *c = fopen("dev/doc_example_program.c", "w+b");
   while (nextCodeLine(&it, &line)) {
-    size_t written = fwrite(line.data, 1, line.size, c);
-    printf("fwrite(%p, 1, %zu, %p): %zu\n", line.data, line.size, (void *)c, written);
+    fwrite(line.data, 1, line.size, c);
     fputc('\n', c);
   }
   fflush(c);
   fclose(c);
   unmapFile(doc);
-  int cc_status;
 #ifdef _WIN32
   cc_status = COMPILE(CC, "", "", " dev/doc_example_program.c",
                       "out/exe/doc_example_program" BIN_EXT, "", "");
@@ -164,6 +164,7 @@ int main(int argc, char *argv[]) {
 #endif
   if (cc_status != 0)
     return cc_status;
+#endif
 
   cc_status = COMPILE(CC, "", "", " dev/raw_file_to_png.c",
                       "out/exe/raw_file_to_png" BIN_EXT, CFLAGS, "");
