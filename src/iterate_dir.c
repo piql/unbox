@@ -25,8 +25,8 @@ typedef struct {
 static bool dir_start(const char *const path, DirIterator *const out) {
 #ifdef _WIN32
   char buf[4096];
-  int result = snprintf(buf, sizeof(buf), "%s\\*", path);
-  if (result < 0 || result > sizeof(buf))
+  int result = snprintf(buf, sizeof buf, "%s\\*", path);
+  if (result < 0 || result > sizeof buf)
     return false;
   WIN32_FIND_DATAA file_data;
   HANDLE h = FindFirstFileA(buf, &file_data);

@@ -267,6 +267,10 @@ int main(int argc, char *argv[]) {
                       "out/exe/raw_file_to_png" BIN_EXT, CFLAGS, "");
   if (cc_status != 0)
     return cc_status;
+#ifdef _WIN32
+  RUN("mt.exe -nologo -manifest dev/build/unbox.manifest "
+      "-outputresource:out/exe/raw_file_to_png.exe;#1");
+#endif
   cc_status = COMPILE(CC, DEFINES, INCLUDES, SOURCES " src/main.c",
                       "out/exe/unbox" BIN_EXT, CFLAGS, LFLAGS);
 #ifdef _WIN32
@@ -274,7 +278,10 @@ int main(int argc, char *argv[]) {
 #endif
   if (cc_status != 0)
     return cc_status;
-#ifndef _WIN32
+#ifdef _WIN32
+  RUN("mt.exe -nologo -manifest dev/build/unbox.manifest "
+      "-outputresource:out/exe/unbox.exe;#1");
+#else
   RUN("date; ls -lAh --color=always out/exe");
 #endif
   if (has_arg(argc, argv, "run") ||
