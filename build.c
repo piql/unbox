@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
   fclose(c);
   unmapFile(doc);
 #ifdef _WIN32
-  RUN("type dev/tmp.c");
+  RUN("type dev\\tmp.c");
 #endif
   COMPILE(CC, DEFINES, " -Idep/unboxing/tests/testutils/src" UNBOXING_INCLUDES,
           UNBOXING_SOURCES " dev/tmp.c", "out/exe/doc_example_program" BIN_EXT,
