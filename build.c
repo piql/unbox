@@ -138,7 +138,11 @@ int main(int argc, char *argv[]) {
   FILE *c = fopen("dev/tmp.c", "w");
   while (nextCodeLine(&it, &line)) {
     fwrite(line.data, 1, line.size, c);
+#ifdef _WIN32
+    fputs("\r\n", c);
+#else
     fputc('\n', c);
+#endif
   }
   fclose(c);
   unmapFile(doc);
