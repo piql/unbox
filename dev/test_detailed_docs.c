@@ -1,5 +1,5 @@
 #include "../src/map_file.c"
-#include "build/unboxing_defines.h"
+#include "build/unboxing.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,7 +62,7 @@ int main(void) {
   fclose(c);
   system("gcc"
          " -Idep/unboxing/tests/testutils/src" UNBOXING_DEFINES
-             UNBOXING_INCLUDES UNBOXING_SOURCES " dev/tmp.c" UNBOXING_LINK
+             UNBOXING_INCLUDES UNBOXING_SOURCES " dev/tmp.c" UNBOXING_LFLAGS
          " -o dev/tmp");
   system("rm dev/tmp.c");
   system("./dev/tmp");

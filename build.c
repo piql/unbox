@@ -33,7 +33,8 @@ exit $?
 #elif defined(__APPLE__)
 #define CC "clang"
 #define CC_DEFINES ""
-#define CFLAGS " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
+#define CFLAGS                                                                 \
+  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
 #define TARGET_MACOS
 #elif defined(RELEASE) && !defined(TARGET_WINDOWS)
 #define CC "gcc"
@@ -79,52 +80,10 @@ exit $?
 
 #include "dev/build/util.c" // uses TARGET_WINDOWS
 
-#include "dev/build/unboxing_defines.h"
-
-#define MXML_INCLUDES " -Idep/afs/thirdparty/minixml/inc"
-#define MXML_SOURCES                                                           \
-  " dep/afs/thirdparty/minixml/src/mxml-attr.c"                                \
-  " dep/afs/thirdparty/minixml/src/mxml-entity.c"                              \
-  " dep/afs/thirdparty/minixml/src/mxml-file.c"                                \
-  " dep/afs/thirdparty/minixml/src/mxml-get.c"                                 \
-  " dep/afs/thirdparty/minixml/src/mxml-node.c"                                \
-  " dep/afs/thirdparty/minixml/src/mxml-private.c"                             \
-  " dep/afs/thirdparty/minixml/src/mxml-search.c"                              \
-  " dep/afs/thirdparty/minixml/src/mxml-string.c"                              \
-  ""
-
-#define AFS_INCLUDES                                                           \
-  " -Idep/afs/inc"                                                             \
-  ""
-
-#define AFS_SOURCES                                                            \
-  " dep/afs/src/administrativemetadata.c"                                      \
-  " dep/afs/src/controldata.c"                                                 \
-  " dep/afs/src/controlframe/boxingformat.c"                                   \
-  " dep/afs/src/framerange.c"                                                  \
-  " dep/afs/src/frameranges.c"                                                 \
-  " dep/afs/src/technicalmetadata.c"                                           \
-  " dep/afs/src/toc/previewlayoutdefinition.c"                                 \
-  " dep/afs/src/toc/previewlayoutdefinitions.c"                                \
-  " dep/afs/src/toc/previewsection.c"                                          \
-  " dep/afs/src/toc/previewsections.c"                                         \
-  " dep/afs/src/tocdata.c"                                                     \
-  " dep/afs/src/tocdatafilemetadata.c"                                         \
-  " dep/afs/src/tocdatafilemetadatasource.c"                                   \
-  " dep/afs/src/tocdatareel.c"                                                 \
-  " dep/afs/src/tocdatareels.c"                                                \
-  " dep/afs/src/tocfile.c"                                                     \
-  " dep/afs/src/tocfilepreview.c"                                              \
-  " dep/afs/src/tocfilepreviewpage.c"                                          \
-  " dep/afs/src/tocfiles.c"                                                    \
-  " dep/afs/src/tocmetadata.c"                                                 \
-  " dep/afs/src/tocmetadatasource.c"                                           \
-  " dep/afs/src/xmlutils.c"                                                    \
-  ""
-
-#define RPMALLOC_SOURCES                                                       \
-  " dep/rpmalloc/rpmalloc/rpmalloc.c"                                          \
-  ""
+#include "dev/build/afs.h"
+#include "dev/build/mxml.h"
+#include "dev/build/rpmalloc.h"
+#include "dev/build/unboxing.h"
 
 #define SYSTEM_WITH_LOG(cmd) (printf("\x1b[90m%s\x1b[0m\n", cmd), system(cmd))
 
@@ -135,7 +94,7 @@ exit $?
 #ifdef _WIN32
 #define LFLAGS ""
 #else
-#define LFLAGS UNBOXING_LINK
+#define LFLAGS UNBOXING_LFLAGS
 #endif
 #ifdef RELEASE
 #define SOURCES RPMALLOC_SOURCES UNBOXING_SOURCES AFS_SOURCES MXML_SOURCES
