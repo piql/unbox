@@ -30,6 +30,11 @@ exit $?
 #define CC_DEFINES " -DWIN32"
 #define CFLAGS ""
 #define TARGET_WINDOWS
+#elif defined(__APPLE__)
+#define CC "clang"
+#define CC_DEFINES ""
+#define CFLAGS " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
+#define TARGET_MACOS
 #elif defined(RELEASE) && !defined(TARGET_WINDOWS)
 #define CC "gcc"
 #define CC_DEFINES ""
