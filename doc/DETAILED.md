@@ -97,7 +97,7 @@ void boxing_log_args(const enum BoxingLogLevel level,
 ```c
 #define STB_IMAGE_IMPLEMENTATION
 #include "../dep/stb/stb_image.h"
-int main(void) {
+int main(int argc, char *argv[]) {
 ```
 -->
 
