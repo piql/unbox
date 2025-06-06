@@ -10,8 +10,10 @@ jobs:
           - os: ubuntu-24.04
             image: gcc:15.1.0
             build_command: ./build.c -DASAN
+            run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
           - os: windows-2025
             build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo && cl.exe /nologo build.c && build.exe"
+            run_command: out/exe/unbox.exe dep/ivm_testdata/reel/png out/data
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.image || '' }}
     steps:
@@ -23,10 +25,8 @@ jobs:
       - name: Build
         run: ${{ matrix.build_command }}
       - name: Test
-        if: ${{ matrix.os == 'ubuntu-24.04' }}
-        run: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
+        run: ${{ matrix.run_command }}
       - name: Upload debug binary
-        if: ${{ matrix.os == 'ubuntu-24.04' }}
         uses: actions/upload-artifact@v4
         with:
           name: unbox
