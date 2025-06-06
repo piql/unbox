@@ -130,6 +130,11 @@ int main(int argc, char *argv[]) {
   mkdir("out", 0755);
   mkdir("out/exe", 0755);
 
+#ifndef RELEASE
+  mkdir(".vscode", 0755);
+  writeVSCodeInfo(INCLUDES, DEFINES);
+#endif
+
   Slice doc = mapFile("doc/DETAILED.md");
   MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
                                    .in_code_block = false};
@@ -138,26 +143,26 @@ int main(int argc, char *argv[]) {
   FILE *c = fopen("dev/doc_example_program.c", "w+b");
   while (nextCodeLine(&it, &line)) {
     fwrite(line.data, 1, line.size, c);
-#ifdef _WIN32
-    fputs("\r\n", c);
-#else
     fputc('\n', c);
-#endif
   }
   fclose(c);
   unmapFile(doc);
-  COMPILE(CC, DEFINES, " -Idep/unboxing/tests/testutils/src" UNBOXING_INCLUDES,
-          UNBOXING_SOURCES " dev/doc_example_program.c", "out/exe/doc_example_program" BIN_EXT,
-          CFLAGS, LFLAGS);
-
-#ifndef RELEASE
-  mkdir(".vscode", 0755);
-  writeVSCodeInfo(INCLUDES, DEFINES);
-#endif
-
   int cc_status;
+  cc_status = COMPILE(CC, DEFINES,
+                      " -Idep/unboxing/tests/testutils/src" UNBOXING_INCLUDES,
+                      UNBOXING_SOURCES " dev/doc_example_program.c",
+                      "out/exe/doc_example_program" BIN_EXT, CFLAGS, LFLAGS);
+#ifdef _WIN32
+  RUN("del *.obj");
+#endif
+  if (cc_status != 0)
+    return cc_status;
+
   cc_status = COMPILE(CC, "", "", " dev/raw_file_to_png.c",
                       "out/exe/raw_file_to_png" BIN_EXT, CFLAGS, "");
+#ifdef _WIN32
+  RUN("del *.obj");
+#endif
   if (cc_status != 0)
     return cc_status;
 #ifdef _WIN32
