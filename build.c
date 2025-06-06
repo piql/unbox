@@ -149,9 +149,8 @@ int main(int argc, char *argv[]) {
   fclose(c);
   unmapFile(doc);
   int cc_status;
-  cc_status = COMPILE(CC, DEFINES, UNBOXING_INCLUDES,
-                      UNBOXING_SOURCES " dev/doc_example_program.c",
-                      "out/exe/doc_example_program" BIN_EXT, CFLAGS, LFLAGS);
+  cc_status = COMPILE(CC, "", "", " dev/doc_example_program.c",
+                      "out/exe/doc_example_program" BIN_EXT, "", "");
 #ifdef _WIN32
   RUN("del *.obj");
 #endif
