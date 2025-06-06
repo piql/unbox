@@ -180,6 +180,7 @@ int decode_result = boxing_unboxer_unbox(&data, metadata_list, &image, unboxer, 
 
 <!--
 ```c
+  (void)decode_result;
 }
 ```
 -->

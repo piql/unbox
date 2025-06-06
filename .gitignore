@@ -6,3 +6,4 @@ out
 reel
 build
 build.exe
+dev/tmp*

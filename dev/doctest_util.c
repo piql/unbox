@@ -47,25 +47,3 @@ bool nextCodeLine(MarkdownCodeBlockIteratorC *it, Slice *code_line) {
   }
   return false;
 }
-
-int main(void) {
-  Slice doc = mapFile("doc/DETAILED.md");
-  MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
-                                   .in_code_block = false};
-  size_t n = 0;
-  Slice line;
-  FILE *c = fopen("dev/tmp.c", "w");
-  while (nextCodeLine(&it, &line)) {
-    fwrite(line.data, 1, line.size, c);
-    fputc('\n', c);
-  }
-  fclose(c);
-  system("gcc"
-         " -Idep/unboxing/tests/testutils/src" UNBOXING_DEFINES
-             UNBOXING_INCLUDES UNBOXING_SOURCES " dev/tmp.c" UNBOXING_LFLAGS
-         " -o dev/tmp");
-  system("rm dev/tmp.c");
-  system("./dev/tmp");
-  system("rm dev/tmp");
-  return 0;
-}

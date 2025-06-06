@@ -10,14 +10,17 @@ jobs:
           - os: ubuntu-24.04
             build_command: ./build.c -DASAN
             run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
+            doctest_command: ./out/exe/doc_example_program
             artifact_name: unbox-debug-x86_64-linux
           - os: windows-2025
             build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo && cl.exe /nologo build.c && build.exe"
             run_command: out/exe/unbox.exe dep/ivm_testdata/reel/png out/data
+            doctest_command: out/exe/doc_example_program.exe
             artifact_name: unbox-debug-x86_64-win32
           - os: macos-15
             build_command: clang build.c -o build && ./build
             run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
+            doctest_command: ./out/exe/doc_example_program
             artifact_name: unbox-debug-arm64-macos
     runs-on: ${{ matrix.os }}
     steps:
@@ -30,6 +33,8 @@ jobs:
         run: ${{ matrix.build_command }}
       - name: Test
         run: ${{ matrix.run_command }}
+      - name: Doc Test
+        run: ${{ matrix.doctest_command }}
       - name: Upload debug binary
         uses: actions/upload-artifact@v4
         with:

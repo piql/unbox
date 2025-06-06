@@ -21,6 +21,7 @@ exit $?
 // clang-format on
 #endif
 
+#include "dev/doctest_util.c"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -128,6 +129,23 @@ bool has_arg(int argc, char *argv[], const char *arg) {
 int main(int argc, char *argv[]) {
   mkdir("out", 0755);
   mkdir("out/exe", 0755);
+
+  Slice doc = mapFile("doc/DETAILED.md");
+  MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
+                                   .in_code_block = false};
+  size_t n = 0;
+  Slice line;
+  FILE *c = fopen("dev/tmp.c", "w");
+  while (nextCodeLine(&it, &line)) {
+    fwrite(line.data, 1, line.size, c);
+    fputc('\n', c);
+  }
+  fclose(c);
+  unmapFile(doc);
+  COMPILE(CC, DEFINES, " -Idep/unboxing/tests/testutils/src" UNBOXING_INCLUDES,
+          UNBOXING_SOURCES " dev/tmp.c", "out/exe/doc_example_program" BIN_EXT,
+          CFLAGS, LFLAGS);
+
 #ifndef RELEASE
   mkdir(".vscode", 0755);
   writeVSCodeInfo(INCLUDES, DEFINES);
