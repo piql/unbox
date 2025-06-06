@@ -10,7 +10,9 @@
 #include "types.h"
 #include "unboxer_helpers.c"
 #include <boxing/config.h>
+#ifndef _WIN32
 #include <dirent.h>
+#endif
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
