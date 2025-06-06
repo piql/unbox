@@ -98,6 +98,7 @@ void boxing_log_args(const enum BoxingLogLevel level,
 #define STB_IMAGE_IMPLEMENTATION
 #include "../dep/stb/stb_image.h"
 int main(int argc, char *argv[]) {
+  DO_STUFF(ERROR + HELLO_TEST);
 (void)argc;
 (void)argv;
 ```
