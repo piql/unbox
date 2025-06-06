@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
                                    .in_code_block = false};
   size_t n = 0;
   Slice line;
-  FILE *c = fopen("dev/tmp.c", "w+b");
+  FILE *c = fopen("dev/doc_example_program.c", "w+b");
   while (nextCodeLine(&it, &line)) {
     fwrite(line.data, 1, line.size, c);
 #ifdef _WIN32
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
   fclose(c);
   unmapFile(doc);
   COMPILE(CC, DEFINES, " -Idep/unboxing/tests/testutils/src" UNBOXING_INCLUDES,
-          UNBOXING_SOURCES " dev/tmp.c", "out/exe/doc_example_program" BIN_EXT,
+          UNBOXING_SOURCES " dev/doc_example_program.c", "out/exe/doc_example_program" BIN_EXT,
           CFLAGS, LFLAGS);
 
 #ifndef RELEASE
