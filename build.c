@@ -27,7 +27,7 @@ exit $?
 #include <sys/stat.h>
 
 #ifdef _WIN32
-#define CC "cl.exe /nologo /SUBSYSTEM:CONSOLE"
+#define CC "cl.exe /nologo"
 #define CC_DEFINES " -DWIN32"
 #define CFLAGS ""
 #define TARGET_WINDOWS
