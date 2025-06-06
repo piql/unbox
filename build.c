@@ -27,7 +27,7 @@ exit $?
 #include <sys/stat.h>
 
 #ifdef _WIN32
-#define CC "cl.exe /nologo"
+#define CC "cl.exe /nologo /SUBSYSTEM:CONSOLE"
 #define CC_DEFINES " -DWIN32"
 #define CFLAGS ""
 #define TARGET_WINDOWS
@@ -146,9 +146,6 @@ int main(int argc, char *argv[]) {
   }
   fclose(c);
   unmapFile(doc);
-#ifdef _WIN32
-  RUN("type dev\\tmp.c");
-#endif
   COMPILE(CC, DEFINES, " -Idep/unboxing/tests/testutils/src" UNBOXING_INCLUDES,
           UNBOXING_SOURCES " dev/tmp.c", "out/exe/doc_example_program" BIN_EXT,
           CFLAGS, LFLAGS);
