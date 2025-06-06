@@ -180,6 +180,12 @@ int decode_result = boxing_unboxer_unbox(&data, metadata_list, &image, unboxer, 
 
 <!--
 ```c
+  if (data.buffer) free(data.buffer);
+  if (IMAGE_DATA) free(IMAGE_DATA);
+  boxing_metadata_list_free(metadata_list);
+  boxing_unboxer_free(unboxer);
+  boxing_unboxer_parameters_free(&parameters);
+  boxing_config_free(config);
   (void)decode_result;
 }
 ```
