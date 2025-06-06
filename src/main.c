@@ -201,6 +201,18 @@ int main(int argc, char *argv[]) {
   if (control_frame_contents.data) {
     printf("%.*s\n", (int)control_frame_contents.size,
            (char *)control_frame_contents.data);
+    uint64_t crc = boxing_math_crc64_calc_crc(
+        dcrc64, control_frame_contents.data, control_frame_contents.size);
+    boxing_math_crc64_reset(dcrc64, POLY_CRC_64);
+    char cachefile_path[4096];
+    snprintf(cachefile_path, sizeof cachefile_path,
+             "%s/control_frame_%" PRIx64 ".xml", output_folder, crc);
+#ifdef _WIN32
+    mkdir(output_folder);
+#else
+    mkdir(output_folder, 0755);
+#endif
+    writeEntireFile(cachefile_path, control_frame_contents);
     afs_control_data *ctl = afs_control_data_create();
     if (afs_control_data_load_string(
             ctl, (const char *)control_frame_contents.data)) {
@@ -211,16 +223,7 @@ int main(int argc, char *argv[]) {
               use_raw_decoding, &unboxer) == UnboxerInitOK) {
         Slice toc_contents;
         bool toc_contents_cached = false;
-        uint64_t crc = boxing_math_crc64_calc_crc(
-            dcrc64, control_frame_contents.data, control_frame_contents.size);
-        boxing_math_crc64_reset(dcrc64, POLY_CRC_64);
-#ifdef _WIN32
-        mkdir(output_folder);
-#else
-        mkdir(output_folder, 0755);
-#endif
-        char cachefile_path[4096];
-        snprintf(cachefile_path, sizeof(cachefile_path),
+        snprintf(cachefile_path, sizeof cachefile_path,
                  "%s/toc_%" PRIx64 ".xml", output_folder, crc);
         printf("checking for: %s\n", cachefile_path);
         Slice cached_toc_contents = mapFile(cachefile_path);

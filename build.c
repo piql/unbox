@@ -25,9 +25,9 @@ exit $?
 #include <stdlib.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32)
-#define CC "cl"
-#define CC_DEFINES ""
+#ifdef _WIN32
+#define CC "cl.exe"
+#define CC_DEFINES " -DWIN32"
 #define CFLAGS ""
 #define TARGET_WINDOWS
 #elif defined(RELEASE) && !defined(TARGET_WINDOWS)
@@ -37,7 +37,7 @@ exit $?
 #elif !defined(TARGET_WINDOWS)
 #define CC "gcc"
 #define CC_DEFINES ""
-#if defined(ASAN)
+#ifdef ASAN
 #define CFLAGS                                                                 \
   " -g -fsanitize=address -Wall -Wextra -Wpedantic -Werror -std=c99"
 #else
@@ -68,10 +68,16 @@ exit $?
 
 #include "dev/build/util.c" // uses TARGET_WINDOWS
 
-#if defined(RELEASE)
-#define UNBOXING_DEFINES " -DRAND_FILE='\"randfile\"'"
+#ifdef _WIN32
+#define RAND_FILE_DEFINE " -DRAND_FILE=\"\"\"randfile\"\"\""
 #else
-#define UNBOXING_DEFINES " -D_DEBUG -DRAND_FILE='\"randfile\"'"
+#define RAND_FILE_DEFINE " -DRAND_FILE='\"randfile\"'"
+#endif
+
+#ifdef RELEASE
+#define UNBOXING_DEFINES RAND_FILE_DEFINE
+#else
+#define UNBOXING_DEFINES " -D_DEBUG" RAND_FILE_DEFINE
 #endif
 
 #define UNBOXING_LINK " -lm"
@@ -214,13 +220,18 @@ exit $?
 
 #define DEFINES CC_DEFINES UNBOXING_DEFINES
 #define INCLUDES UNBOXING_INCLUDES AFS_INCLUDES MXML_INCLUDES
-#if defined(RELEASE)
+#ifdef _WIN32
+#define LFLAGS ""
+#else
+#define LFLAGS UNBOXING_LINK
+#endif
+#ifdef RELEASE
 #define SOURCES RPMALLOC_SOURCES UNBOXING_SOURCES AFS_SOURCES MXML_SOURCES
 #else
 #define SOURCES UNBOXING_SOURCES AFS_SOURCES MXML_SOURCES
 #endif
 
-#if defined(_WIN32)
+#ifdef _WIN32
 #define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
   SYSTEM_WITH_LOG(cc defines includes sources lflags cflags                    \
                   " /link /out:" output " & del *.obj")
@@ -237,7 +248,7 @@ bool has_arg(int argc, char *argv[], const char *arg) {
   return false;
 }
 
-#if defined(TARGET_WINDOWS)
+#ifdef TARGET_WINDOWS
 #define BIN_EXT ".exe"
 #else
 #define BIN_EXT ""
@@ -257,18 +268,20 @@ int main(int argc, char *argv[]) {
   if (cc_status != 0)
     return cc_status;
   cc_status = COMPILE(CC, DEFINES, INCLUDES, SOURCES " src/main.c",
-                      "out/exe/unbox" BIN_EXT, CFLAGS, UNBOXING_LINK);
+                      "out/exe/unbox" BIN_EXT, CFLAGS, LFLAGS);
   if (cc_status != 0)
     return cc_status;
+#ifndef _WIN32
   RUN("date; ls -lAh --color=always out/exe");
+#endif
   if (has_arg(argc, argv, "run") ||
-#if defined(TEST)
+#ifdef TEST
       true
 #else
       false
 #endif
   ) {
-#if defined(TARGET_WINDOWS)
+#ifdef TARGET_WINDOWS
     return RUN("wine out/exe/unbox" BIN_EXT
                " dep/ivm_testdata/reel/png out/data");
 #else

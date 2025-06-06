@@ -9,6 +9,9 @@ jobs:
         include:
           - os: ubuntu-24.04
             image: gcc:15.1.0
+            build_command: ./build.c -DASAN
+          - os: windows-2025
+            build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo && cl.exe build.c && build.exe"
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.image || '' }}
     steps:
@@ -18,13 +21,7 @@ jobs:
           fetch-depth: 1
           submodules: "recursive"
       - name: Build
-        if: ${{ matrix.os == 'ubuntu-24.04' }}
-        run: |
-          ./build.c -DASAN
-      - name: Build
-        if: ${{ matrix.os == 'windows-2025' }}
-        run: |
-          cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" && cl build.c && build.exe"
+        run: ${{ matrix.build_command }}
       - name: Test
         if: ${{ matrix.os == 'ubuntu-24.04' }}
         run: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
