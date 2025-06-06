@@ -8,7 +8,6 @@ jobs:
         os: [ubuntu-24.04, windows-2025]
         include:
           - os: ubuntu-24.04
-            image: gcc:15.1.0
             build_command: ./build.c -DASAN
             run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
             artifact_name: unbox-debug-x86_64-linux
@@ -17,7 +16,6 @@ jobs:
             run_command: out/exe/unbox.exe dep/ivm_testdata/reel/png out/data
             artifact_name: unbox-debug-x86_64-win32
     runs-on: ${{ matrix.os }}
-    container: ${{ matrix.image || '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
