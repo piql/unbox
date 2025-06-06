@@ -15,14 +15,14 @@ bool nextLine(LineIterator *it, Slice *line) {
   size_t i;
   for (i = it->i; i < it->data.size; i++) {
     if (((char *)it->data.data)[i] == '\n') {
-      *line = (Slice){.data = it->data.data + it->i, .size = i - it->i};
+      *line = (Slice){.data = (char *)it->data.data + it->i, .size = i - it->i};
       it->i = i + 1;
       return true;
     }
   }
   if (it->i == i)
     return false;
-  *line = (Slice){.data = it->data.data + it->i, .size = i - it->i};
+  *line = (Slice){.data = (char *)it->data.data + it->i, .size = i - it->i};
   it->i = i + 1;
   return true;
 }
