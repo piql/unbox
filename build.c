@@ -26,7 +26,7 @@ exit $?
 #include <sys/stat.h>
 
 #ifdef _WIN32
-#define CC "cl.exe"
+#define CC "cl.exe /nologo"
 #define CC_DEFINES " -DWIN32"
 #define CFLAGS ""
 #define TARGET_WINDOWS
@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
   cc_status = COMPILE(CC, DEFINES, INCLUDES, SOURCES " src/main.c",
                       "out/exe/unbox" BIN_EXT, CFLAGS, LFLAGS);
 #ifdef _WIN32
-  RUN('del *.obj');
+  RUN("del *.obj");
 #endif
   if (cc_status != 0)
     return cc_status;

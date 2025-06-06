@@ -11,7 +11,7 @@ jobs:
             image: gcc:15.1.0
             build_command: ./build.c -DASAN
           - os: windows-2025
-            build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo && cl.exe build.c && build.exe"
+            build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo && cl.exe /nologo build.c && build.exe"
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.image || '' }}
     steps:
