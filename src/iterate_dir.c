@@ -24,7 +24,7 @@ typedef struct {
 
 static bool dir_start(const char *const path, DirIterator *const out) {
 #ifdef _WIN32
-  char buf[PATH_MAX];
+  char buf[4096];
   int result = snprintf(buf, sizeof(buf), "%s\\*", path);
   if (result < 0 || result > sizeof(buf))
     return false;
