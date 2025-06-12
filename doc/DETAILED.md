@@ -4,6 +4,10 @@ This explanation will focus mainly on usage of the unboxing library in order to
 decode a full piqlFilm. In the future it may also cover building the library and
 project setup, but for now it will only focus on usage in code.
 
+For simplicity and brevity, error checking and resource cleanup will be omitted.
+For a more thorough deep-dive see the unbox command-line tool
+[source code](../src/main.c).
+
 All code snippets are in C99.
 
 <!-- FUTURE: Section on build setup here? -->
