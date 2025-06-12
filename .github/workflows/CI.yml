@@ -34,12 +34,9 @@ jobs:
       - name: Test
         run: ${{ matrix.run_command }}
       - name: Doc Test
-        if: ${{ matrix.os != 'windows-2025' }}
         run: ${{ matrix.doctest_command }}
       - name: Upload debug binary
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: |
-            out/exe/*
-            dev/doc_example_program.c
+          path: out/exe/*
