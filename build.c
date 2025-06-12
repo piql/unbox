@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
   if (cc_status != 0)
     return cc_status;
 #ifdef _WIN32
-  RUN("mt.exe -nologo -manifest dev/build/unbox.manifest "
+  RUN("mt.exe -nologo -manifest dev/build/UTF8.manifest "
       "-outputresource:out/exe/raw_file_to_png.exe;#1");
 #endif
   cc_status = COMPILE(CC, DEFINES, INCLUDES, SOURCES " src/main.c",
@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
   if (cc_status != 0)
     return cc_status;
 #ifdef _WIN32
-  RUN("mt.exe -nologo -manifest dev/build/unbox.manifest "
+  RUN("mt.exe -nologo -manifest dev/build/UTF8.manifest "
       "-outputresource:out/exe/unbox.exe;#1");
 #else
   RUN("date; ls -lAh --color=always out/exe");
