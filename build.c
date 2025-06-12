@@ -2,6 +2,7 @@
 : <<E
 // clang-format off
 E
+set -e
 
 # Shell script for simpler building with ./build.c
 
@@ -12,7 +13,6 @@ E
 #   -DTARGET_WINDOWS - Build for Windows (Requires `zig` in path)
 
 echo -e "\x1b[90mgcc -o $(basename $0 .c) "$@" $(basename $0)\x1b[0m"
-set -e
 gcc -o $(basename $0 .c) "$@" $(basename $0)
 echo -e "\x1b[90m./$(basename $0 .c)\x1b[0m"
 ./$(basename $0 .c)
@@ -174,9 +174,8 @@ int main(int argc, char *argv[]) {
 
   { // Perform builds
     int cc_status;
-    BUILD_STMT(CC, DEFINES,
-               UNBOXING_INCLUDES " -Idep/unboxing/tests/testutils/src",
-               UNBOXING_SOURCES " dev/doc_example_program.c",
+    BUILD_STMT(CC, DEFINES, INCLUDES " -Idep/unboxing/tests/testutils/src",
+               SOURCES " dev/doc_example_program.c",
                "out/exe/doc_example_program", CFLAGS, LFLAGS, cc_status)
     BUILD_STMT(CC, DEFINES, "", " dev/raw_file_to_png.c",
                "out/exe/raw_file_to_png", CFLAGS, "", cc_status)

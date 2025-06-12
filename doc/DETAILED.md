@@ -100,6 +100,7 @@ search paths, as well as the
 
 <!--
 ```c
+#include <assert.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "../dep/stb/stb_image.h"
 int main(int argc, char *argv[]) {
@@ -205,12 +206,17 @@ int decode_result = boxing_unboxer_unbox(&data, metadata_list, &image, unboxer, 
 ```
 
 For debugging purposes, we can now print the control frame data contents if
-everything went well:
+everything went well (You should check that `extract_result` and `decode_result`
+are both equal to `BOXING_UNBOXER_OK` before accessing the data buffer):
+
+<!--
+```c
+assert(extract_result == BOXING_UNBOXER_OK && decode_result == BOXING_UNBOXER_OK);
+```
+-->
 
 ```c
-if (extract_result == BOXING_UNBOXER_OK && decode_result == BOXING_UNBOXER_OK) {
-  printf("%.*s\n", (int)data.size, (char *)data.buffer);
-}
+printf("%.*s\n", (int)data.size, (char *)data.buffer);
 ```
 
 You should expect to see a minified XML file at this point.
@@ -220,10 +226,58 @@ of the reel.
 
 ## Parsing the control frame and unboxing the Table of Contents
 
+There are many ways to parse the control frame data. Piql provides a "built-in"
+and self-contained way which is printed along the reel alongside the unboxing
+code. This is the `afs` library.
+
+First we'll need to add some more includes to our project:
+
+```c
+#include <controldata.h>
+```
+
+In order to parse the control frame data using `afs`, we will want to initialize
+an `afs_control_data` object and load the XML string into it. We'll have to
+zero-terminate the XML string first:
+
+```c
+data.buffer = realloc(data.buffer, data.size + 1);
+((char *)data.buffer)[data.size] = '\0';
+data.size++;
+
+afs_control_data *ctl = afs_control_data_create();
+afs_control_data_load_string(ctl, (const char *)data.buffer);
+```
+
+Once we have loaded the control data we can print some information that was
+stored in the XML text:
+
+```c
+printf(
+  "Loaded control frame of a piqlFilm titled '%s' created by '%s' at '%s'\n",
+  ctl->administrative_metadata->title,
+  ctl->administrative_metadata->creator,
+  ctl->administrative_metadata->creation_date
+);
+```
+
+Next we need to find the frame numbers corresponding to the Table of Contents:
+
+```c
+afs_toc_file *toc_file = afs_toc_files_get_toc(ctl->technical_metadata->afs_tocs, 0);
+printf(
+  "First Table of Contents file is %zu bytes, starts at frame %d and ends at frame %d\n",
+  toc_file->size,
+  toc_file->start_frame,
+  toc_file->end_frame
+);
+```
+
 (In progress...)
 
 <!--
 ```c
+  afs_control_data_free(ctl);
   if (data.buffer) free(data.buffer);
   if (IMAGE_DATA) free(IMAGE_DATA);
   boxing_metadata_list_free(metadata_list);
