@@ -180,14 +180,6 @@ We also need to construct a `gvector` value and `extract_result` integer to hold
 the resulting data from decoding the frame, and the error code from extracting
 the inner data from the container.
 
-`decode_result` will hold the result of decoding the data. Both `extract_result`
-and `decode_result` should have the value `BOXING_UNBOXER_OK` after unboxing is
-done if everything went successfully. See the enum `boxing_unboxer_result`
-defined in
-[`boxing/unboxer.h`](https://github.com/piql/unboxing/blob/master/inc/boxing/unboxer.h)
-for more information about possible error codes, and remember to check the logs
-for additional failure information.
-
 ```c
 gvector data = {
     .buffer = NULL,
@@ -196,8 +188,32 @@ gvector data = {
     .element_free = NULL,
 };
 int extract_result;
+```
+
+`decode_result` will hold the result of decoding the data. Both `extract_result`
+and `decode_result` should have the value `BOXING_UNBOXER_OK` after unboxing is
+done if everything went successfully. See the enum `boxing_unboxer_result`
+defined in
+[`boxing/unboxer.h`](https://github.com/piql/unboxing/blob/master/inc/boxing/unboxer.h)
+for more information about possible error codes, and remember to check the logs
+for additional failure information.
+
+Finally we perform the unboxing:
+
+```c
 int decode_result = boxing_unboxer_unbox(&data, metadata_list, &image, unboxer, &extract_result, NULL, BOXING_METADATA_CONTENT_TYPES_CONTROLFRAME);
 ```
+
+For debugging purposes, we can now print the control frame data contents if
+everything went well:
+
+```c
+if (extract_result == BOXING_UNBOXER_OK && decode_result == BOXING_UNBOXER_OK) {
+  printf("%.*s\n", (int)data.size, (char *)data.buffer);
+}
+```
+
+You should expect to see a minified XML file at this point.
 
 After decoding the control frame, we can parse the contents, and decode the rest
 of the reel (TODO)
@@ -212,7 +228,6 @@ of the reel (TODO)
   boxing_unboxer_free(unboxer);
   boxing_unboxer_parameters_free(&parameters);
   boxing_config_free(config);
-  (void)decode_result;
 }
 ```
 -->
