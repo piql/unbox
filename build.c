@@ -138,13 +138,15 @@ int main(int argc, char *argv[]) {
   int cc_status;
 
   Slice doc = mapFile("doc/DETAILED.md");
+  printf("doc: %p, %zu\n", doc.data, doc.size);
   MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
                                    .in_code_block = false};
   size_t n = 0;
   Slice line;
-  FILE *c = fopen("dev/doc_example_program.c", "w+b");
+  FILE *c = fopen("dev/doc_example_program.c", "wb");
   printf("c: %p\n", c);
   while (nextCodeLine(&it, &line)) {
+    printf("line: %.*s\n", (int)line.size, line.data);
     printf("fwrite(...): %zu\n", fwrite(line.data, 1, line.size, c));
     printf("fputc(): %d\n", fputc('\n', c));
   }
