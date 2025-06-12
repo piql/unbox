@@ -107,6 +107,39 @@ search paths, as well as the
 #include <assert.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "../dep/stb/stb_image.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "../dep/stb/stb_image_write.h"
+static boxing_image8 LOAD_IMAGE_SOMEHOW(int frame_id) {
+  char path[256];
+  snprintf(path, sizeof path, "dep/ivm_testdata/reel/png/%06d.png", frame_id);
+  printf("loading: %s\n", path);
+  int width;
+  int height;
+  unsigned char *data = stbi_load(path, &width, &height, NULL, 1);
+  unsigned char *scaled_data = malloc((width * 3) * (height * 3));
+  // TODO: optimize, this is a very slow upscaling algorithm
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      scaled_data[(y * 3 + 0) * (width * 3) + (x * 3 + 0)] = data[y * width + x];
+      scaled_data[(y * 3 + 0) * (width * 3) + (x * 3 + 1)] = data[y * width + x];
+      scaled_data[(y * 3 + 0) * (width * 3) + (x * 3 + 2)] = data[y * width + x];
+      scaled_data[(y * 3 + 1) * (width * 3) + (x * 3 + 0)] = data[y * width + x];
+      scaled_data[(y * 3 + 1) * (width * 3) + (x * 3 + 1)] = data[y * width + x];
+      scaled_data[(y * 3 + 1) * (width * 3) + (x * 3 + 2)] = data[y * width + x];
+      scaled_data[(y * 3 + 2) * (width * 3) + (x * 3 + 0)] = data[y * width + x];
+      scaled_data[(y * 3 + 2) * (width * 3) + (x * 3 + 1)] = data[y * width + x];
+      scaled_data[(y * 3 + 2) * (width * 3) + (x * 3 + 2)] = data[y * width + x];
+    }
+  }
+  free(data);
+  // DEBUG(uncomment this to see results of upscaling): stbi_write_png("tmp.png", width * 3, height * 3, 1, scaled_data, width * 3);
+  return (boxing_image8){
+    .width = width * 3,
+    .height = height * 3,
+    .is_owning_data = DFALSE,
+    .data = scaled_data,
+  };
+}
 int main(int argc, char *argv[]) {
 (void)argc;
 (void)argv;
@@ -154,12 +187,10 @@ unsigned int IMAGE_WIDTH;
 unsigned int IMAGE_HEIGHT;
 unsigned char *IMAGE_DATA;
 {
-  int width;
-  int height;
-  unsigned char *data = stbi_load("dep/ivm_testdata/reel/png/000001.png", &width, &height, NULL, 1);
-  IMAGE_WIDTH = (unsigned)width;
-  IMAGE_HEIGHT = (unsigned)height;
-  IMAGE_DATA = data;
+  boxing_image8 image = LOAD_IMAGE_SOMEHOW(1);
+  IMAGE_WIDTH = image.width;
+  IMAGE_HEIGHT = image.height;
+  IMAGE_DATA = image.data;
 }
 ```
 -->
@@ -237,6 +268,7 @@ code. This is the `afs` library.
 First we'll need to add some more includes to our project:
 
 ```c
+#include <string.h>
 #include <controldata.h>
 ```
 
@@ -279,10 +311,78 @@ printf(
 );
 ```
 
+<!--
+```c
+  {
+```
+-->
+
+In order to actually decode the data frames containing table of contents and
+other files, we actually need to initialize a second unboxer using the
+configuration loaded from the control frame data:
+
+```c
+boxing_unboxer_parameters parameters;
+boxing_unboxer_parameters_init(&parameters);
+parameters.format = ctl->technical_metadata->afs_content_boxing_format->config;
+boxing_unboxer *unboxer = boxing_unboxer_create(&parameters);
+```
+
+Following this newly created unboxer, we can start decoding table of contents by
+iterating through the frames (keep in mind you also need to implement a method
+of loading each scanned image file on demand) and concatenating all the data
+results into one big buffer:
+
+```c
+void *table_of_contents = NULL;
+size_t table_of_contents_size = 0;
+boxing_metadata_list *metadata_list = boxing_metadata_list_create();
+for (int current_frame = toc_file->start_frame; current_frame <= toc_file->end_frame; current_frame++) {
+  boxing_image8 image = LOAD_IMAGE_SOMEHOW(current_frame);
+  gvector data = {
+    .buffer = NULL,
+    .size = 0,
+    .item_size = 1,
+    .element_free = NULL,
+  };
+  int extract_result;
+  int decode_result = boxing_unboxer_unbox(&data, metadata_list, &image, unboxer, &extract_result, NULL, BOXING_METADATA_CONTENT_TYPES_TOC);
+  if (extract_result == BOXING_UNBOXER_OK && decode_result == BOXING_UNBOXER_OK) {
+    table_of_contents = realloc(table_of_contents, table_of_contents_size + data.size);
+    memcpy((char *)table_of_contents + table_of_contents_size, data.buffer, data.size);
+    table_of_contents_size += data.size;
+  }
+  free(image.data);
+  free(data.buffer);
+}
+```
+
+Then we will want to offset the data we received by start_byte, and limit it by
+file size:
+
+```c
+memmove(table_of_contents, (char *)table_of_contents + toc_file->start_byte, toc_file->size);
+table_of_contents = realloc(table_of_contents, toc_file->size);
+table_of_contents_size = toc_file->size;
+```
+
+After all this we can finally attempt to print our table of contents data:
+
+```c
+printf("%.*s\n", (int)table_of_contents_size, (char *)table_of_contents);
+```
+
+## Parsing the Table of Contents and decoding the rest of the files on the film
+
 (In progress...)
 
 <!--
 ```c
+    free(table_of_contents);
+    boxing_metadata_list_free(metadata_list);
+    boxing_unboxer_free(unboxer);
+    boxing_unboxer_parameters_free(&parameters);
+  }
   afs_control_data_free(ctl);
   if (data.buffer) free(data.buffer);
   if (IMAGE_DATA) free(IMAGE_DATA);
