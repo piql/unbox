@@ -6,7 +6,47 @@ project setup, but for now it will only focus on usage in code.
 
 All code snippets are in C99.
 
+<!-- FUTURE: Section on build setup here? -->
+
+## Prerequisites for using the unboxing library - logging functions
+
+The unboxing library expects 2 predefined logging functions to exist
+(`boxing_log` and `boxing_log_args`), so your program should define them and
+make them available to the library (Meaning depending on your build setup you
+may need to include `-rdynamic` or similar flags when compiling your
+application).
+
+The library will call these functions during operation and report back some
+handy debugging information, so it's quite useful to look at logs if you are
+having trouble decoding. For this guide we will provide a simple implementation
+that just logs out everything to `stderr`.
+
+A simple implementation of these logging functions could be the following:
+
+```c
+#include <stdarg.h>
+#include <stdio.h>
+
+static const char *const restrict log_level_str[] = { "INFO", "WARNING", "ERROR", "FATAL", "DEBUG" };
+
+void boxing_log(const int log_level, const char *const restrict str) {
+  fprintf(stderr, "%-7s: %s\n", log_level_str[log_level], str);
+}
+
+void boxing_log_args(const int log_level, const char *const restrict fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  fprintf(stderr, "%-7s: ", log_level_str[log_level]);
+  vfprintf(stderr, fmt, args);
+  fputc('\n', stderr);
+  va_end(args);
+}
+```
+
 ## Preliminary information about data types
+
+These are the major datatypes you need to know about to initialize the library
+and perform unboxing (decoding) of scanned frames.
 
 - `config_structure` is the format used to store boxing formats / configurations
   in code source files, meaning the machine-readable description of how a
@@ -27,9 +67,9 @@ All code snippets are in C99.
   For unboxing this will be used to store the resultant data from decoding
   frames.
 
-<!-- FUTURE: Section on build setup here? -->
-
 ## Initialization for unboxing the control frame
+
+<!-- TODO: Rewrite this deranged paragraph -->
 
 In order to initialize an unboxer we first need to construct a
 `boxing_unboxer_parameters` object. In order to create a useful
@@ -40,9 +80,12 @@ Examples of different formats include `4k-controlframe-v7`, `4kv8`, etc. Formats
 are printed in plain text in the margins of each frame.
 
 The only `boxing_config` values we need for unboxing a whole reel are the
-control-frame-defining formats. They are stored in
+control-frame-defining formats. They are stored in C source form (as
+`config_structure`s) in
 [the unboxing repository](https://github.com/piql/unboxing/tree/master/tests/testutils/src)
-(`config_source_4k_controlframe_vX.h`).
+(`config_source_4k_controlframe_vX.h`). For completeness several formats used in
+data frames (such as 4kv8, 4kv11) are also stored here, but they are not
+required for decoding a reel.
 
 To initialize a `boxing_config` we first need to include the relevant
 header-files (assuming the above directory has been added to the project include
@@ -52,45 +95,7 @@ search paths, as well as the
 ```c
 #include <boxing/config.h>
 #include <boxing/unboxer.h>
-#include "../dep/unboxing/tests/testutils/src/config_source_4k_controlframe_v7.h"
-```
-
-You must also define some logging functions for unboxing to function correctly:
-
-<!-- TODO: expand more on boxing_log -->
-
-```c
-#include <stdarg.h>
-#include <stdio.h>
-
-enum BoxingLogLevel {
-  BoxingLogLevelInfo = 0,
-  BoxingLogLevelWarning = 1,
-  BoxingLogLevelError = 2,
-  BoxingLogLevelFatal = 3,
-  BoxingLogLevelAlways = 4,
-};
-
-static const char *boxing_log_level_str[] = {
-    "INFO   ", "WARNING",
-    "ERROR  ", "FATAL  ",
-    "DEBUG  ",
-};
-
-void boxing_log(const enum BoxingLogLevel level,
-                const char *const restrict str) {
-  fprintf(stderr, "%s: %s\n", boxing_log_level_str[level], str);
-}
-
-void boxing_log_args(const enum BoxingLogLevel level,
-                     const char *const restrict fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-  char buf[4096];
-  const int len = vsnprintf(buf, sizeof(buf), fmt, args);
-  va_end(args);
-  fprintf(stderr, "%s: %.*s\n", boxing_log_level_str[level], len, buf);
-}
+#include <config_source_4k_controlframe_v7.h>
 ```
 
 <!--
@@ -109,6 +114,11 @@ Then we can initialize a `boxing_config` using the control frame data:
 boxing_config *config = boxing_config_create_from_structure(&config_source_v7);
 ```
 
+It is also possible to initialize a boxing_config by loading the configuration
+from a configuration XML file using the
+[`afs`](https://github.com/piql/afs/blob/35d6f06770e2586b092fa590e764df256c0c8ae2/inc/controlframe/boxingformat.h#L67)
+library.
+
 For `boxing_unboxer_parameters` may also specify whether or not we want to
 decode using "raw mode". For scanned images this will generally not be the case.
 Using the `config` variable we can initialize a `boxing_unboxer_parameters`
@@ -126,9 +136,8 @@ Finally we will be able to construct an unboxer object:
 boxing_unboxer *unboxer = boxing_unboxer_create(&parameters);
 ```
 
-<!-- TODO: why are we creating this? -->
-
-In order to unbox we also need to create a `boxing_metadata_list`:
+In order to unbox we also need to create a `boxing_metadata_list`, which will be
+populated with any decoded metadata from the frame we are decoding:
 
 ```c
 boxing_metadata_list *metadata_list = boxing_metadata_list_create();
@@ -150,7 +159,13 @@ unsigned char *IMAGE_DATA;
 ```
 -->
 
-Finally we'll be able to run the unboxer to decode a frame:
+In order to provide the image data to the library we need to load the scanned
+image into memory, and get the image width and height. The pixel format (in
+`IMAGE_DATA`) is expected to be inverted, and a 1 byte per pixel grayscale
+image, starting from the top left of the frame, and going row by row from left
+to right. Once we have the image width and height (`IMAGE_WIDTH`,
+`IMAGE_HEIGHT`), and the data correctly loaded, we can construct a
+`boxing_image8`:
 
 ```c
 boxing_image8 image = {
@@ -159,6 +174,21 @@ boxing_image8 image = {
     .is_owning_data = DFALSE,
     .data = IMAGE_DATA,
 };
+```
+
+We also need to construct a `gvector` value and `extract_result` integer to hold
+the resulting data from decoding the frame, and the error code from extracting
+the inner data from the container.
+
+`decode_result` will hold the result of decoding the data. Both `extract_result`
+and `decode_result` should have the value `BOXING_UNBOXER_OK` after unboxing is
+done if everything went successfully. See the enum `boxing_unboxer_result`
+defined in
+[`boxing/unboxer.h`](https://github.com/piql/unboxing/blob/master/inc/boxing/unboxer.h)
+for more information about possible error codes, and remember to check the logs
+for additional failure information.
+
+```c
 gvector data = {
     .buffer = NULL,
     .size = 0,
@@ -169,14 +199,8 @@ int extract_result;
 int decode_result = boxing_unboxer_unbox(&data, metadata_list, &image, unboxer, &extract_result, NULL, BOXING_METADATA_CONTENT_TYPES_CONTROLFRAME);
 ```
 
-- `image` is your image input data as an array of grayscale pixels, and width
-  and height in pixels.
-- `data` is the output vector that will be filled with the decoded frame data.
-- `extract_result` is the result of extracting the inner data from the container
-  (see
-  [Format description on Wikipedia](https://en.wikipedia.org/wiki/Boxing_barcode#Format))
-  and decoding the metadata bar.
-- `decode_result` is the result of decoding the data.
+After decoding the control frame, we can parse the contents, and decode the rest
+of the reel (TODO)
 
 (In progress...)
 

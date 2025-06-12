@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
   }
   fclose(c);
   unmapFile(doc);
-  cc_status = COMPILE(CC, DEFINES, UNBOXING_INCLUDES,
+  cc_status = COMPILE(CC, DEFINES, UNBOXING_INCLUDES " -Idep/unboxing/tests/testutils/src",
                       UNBOXING_SOURCES " dev/doc_example_program.c",
                       "out/exe/doc_example_program" BIN_EXT, CFLAGS, LFLAGS);
 #ifdef _WIN32
