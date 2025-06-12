@@ -266,10 +266,12 @@ Next we need to find the frame numbers corresponding to the Table of Contents:
 ```c
 afs_toc_file *toc_file = afs_toc_files_get_toc(ctl->technical_metadata->afs_tocs, 0);
 printf(
-  "First Table of Contents file is %zu bytes, starts at frame %d and ends at frame %d\n",
+  "First Table of Contents file is %zu bytes, starts at frame %d byte offset %d, and ends at frame %d byte offset %d (inclusive)\n",
   (size_t)toc_file->size,
   toc_file->start_frame,
-  toc_file->end_frame
+  toc_file->start_byte,
+  toc_file->end_frame,
+  toc_file->end_byte
 );
 ```
 
