@@ -144,8 +144,10 @@ int main(int argc, char *argv[]) {
   size_t n = 0;
   Slice line;
   FILE *c = fopen("dev/doc_example_program.c", "wb");
-  while (nextCodeLine(&it, &line))
+  while (nextCodeLine(&it, &line)) {
     fwrite(line.data, 1, line.size, c);
+    fputc('\n', c);
+  }
   fclose(c);
   unmapFile(doc);
 #ifdef _WIN32
