@@ -29,7 +29,7 @@ static bool writePathSegment(const char *const restrict input, Slice scratch,
   return false;
 }
 
-void ensurePathExists(const char *const restrict path) {
+static void ensurePathExists(const char *const restrict path) {
   char buf[256] = {0};
   unsigned cursor = 0;
   for (;;) {

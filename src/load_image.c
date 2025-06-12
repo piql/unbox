@@ -125,7 +125,7 @@ typedef struct {
 // Allocating an image registers an atexit() handler to free it. There is no
 // unloadImage. Process exit will unload the last loaded image. loading a new
 // image will unload the previously loaded image.
-Image loadImage(const char *const restrict path) {
+static Image loadImage(const char *const restrict path) {
   Slice file = mapFile(path);
   image_debug_printf("file.data: %p\n", file.data);
   if (file.data == NULL)

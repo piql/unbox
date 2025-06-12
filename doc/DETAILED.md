@@ -216,7 +216,9 @@ if (extract_result == BOXING_UNBOXER_OK && decode_result == BOXING_UNBOXER_OK) {
 You should expect to see a minified XML file at this point.
 
 After decoding the control frame, we can parse the contents, and decode the rest
-of the reel (TODO)
+of the reel.
+
+## Parsing the control frame and unboxing the Table of Contents
 
 (In progress...)
 

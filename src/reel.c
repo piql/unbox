@@ -25,9 +25,10 @@ typedef struct {
   uint32_t frames[65536];
 } Reel;
 
-bool Reel_init(Reel *reel,
-               const char *const
-                   directory_path // path to directory containing scanned photos
+static bool
+Reel_init(Reel *reel,
+          const char *const
+              directory_path // path to directory containing scanned photos
 ) {
   DirIterator it;
   if (!dir_start(directory_path, &it))
@@ -60,7 +61,7 @@ bool Reel_init(Reel *reel,
   return true;
 }
 
-Reel *Reel_create(void) {
+static Reel *Reel_create(void) {
   Reel *reel = malloc(sizeof(Reel));
   if (!reel)
     return NULL;
@@ -68,17 +69,20 @@ Reel *Reel_create(void) {
   return reel;
 }
 
-void Reel_destroy(Reel *reel) {
+static void Reel_destroy(Reel *reel) {
   free(reel->string_pool.data);
   free(reel);
 }
 
-void Reel_reset(Reel *reel) {
+#if 0
+// Reset a reel object and make it ready for loading new reels
+static void Reel_reset(Reel *reel) {
   reel->string_pool_used = 0;
   memset(&reel->frames, 0, sizeof reel->frames);
 }
+#endif
 
-Slice Reel_unbox_control_frame(Reel *reel, bool *is_raw) {
+static Slice Reel_unbox_control_frame(Reel *reel, bool *is_raw) {
   if (!reel->frames[1])
     return Slice_empty;
   boxing_config *config =
@@ -123,7 +127,7 @@ Slice Reel_unbox_control_frame(Reel *reel, bool *is_raw) {
   return result;
 }
 
-Slice Reel_unbox_toc(Reel *reel, Unboxer *unboxer, afs_toc_file *toc) {
+static Slice Reel_unbox_toc(Reel *reel, Unboxer *unboxer, afs_toc_file *toc) {
   char buf[4096];
   Slice toc_contents = Slice_empty;
   for (int f = toc->start_frame; f <= toc->end_frame; f++) {
