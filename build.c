@@ -137,7 +137,6 @@ int main(int argc, char *argv[]) {
 #endif
   int cc_status;
 
-#ifndef _WIN32
   Slice doc = mapFile("doc/DETAILED.md");
   MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
                                    .in_code_block = false};
@@ -164,6 +163,9 @@ int main(int argc, char *argv[]) {
 #endif
   if (cc_status != 0)
     return cc_status;
+#ifdef _WIN32
+  RUN("mt.exe -nologo -manifest dev/build/UTF8.manifest "
+      "-outputresource:out/exe/doc_example_program.exe;#1");
 #endif
 
   cc_status = COMPILE(CC, "", "", " dev/raw_file_to_png.c",
