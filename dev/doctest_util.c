@@ -10,20 +10,26 @@ typedef struct {
 } LineIterator;
 
 bool nextLine(LineIterator *it, Slice *line) {
-  if (it->i >= it->data.size)
+  if (it->i >= it->data.size) {
+    printf("it{ i = %zu }\n", it->i);
     return false;
+  }
   size_t i;
   for (i = it->i; i < it->data.size; i++) {
     if (((char *)it->data.data)[i] == '\n') {
       *line = (Slice){.data = (char *)it->data.data + it->i, .size = i - it->i};
       it->i = i + 1;
+      printf("it{ i = %zu }\n", it->i);
       return true;
     }
   }
-  if (it->i == i)
+  if (it->i == i) {
+    printf("it{ i = %zu }\n", it->i);
     return false;
+  }
   *line = (Slice){.data = (char *)it->data.data + it->i, .size = i - it->i};
   it->i = i + 1;
+  printf("it{ i = %zu }\n", it->i);
   return true;
 }
 
