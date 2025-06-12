@@ -143,12 +143,13 @@ int main(int argc, char *argv[]) {
   size_t n = 0;
   Slice line;
   FILE *c = fopen("dev/doc_example_program.c", "w+b");
+  printf("c: %p\n", c);
   while (nextCodeLine(&it, &line)) {
-    fwrite(line.data, 1, line.size, c);
-    fputc('\n', c);
+    printf("fwrite(...): %zu\n", fwrite(line.data, 1, line.size, c));
+    printf("fputc(): %d\n", fputc('\n', c));
   }
-  fflush(c);
-  fclose(c);
+  printf("fflush(c): %d\n", fflush(c));
+  printf("fclose(c): %d\n", fclose(c));
   unmapFile(doc);
 #ifdef _WIN32
   cc_status = COMPILE(CC, "", "", " dev/doc_example_program.c",
@@ -161,12 +162,12 @@ int main(int argc, char *argv[]) {
 #ifdef _WIN32
   RUN("del *.obj");
 #endif
-//   // if (cc_status != 0)
-//   //   return cc_status;
-// #ifdef _WIN32
-//   RUN("mt.exe -nologo -manifest dev/build/UTF8.manifest "
-//       "-outputresource:out/exe/doc_example_program.exe;#1");
-// #endif
+  //   // if (cc_status != 0)
+  //   //   return cc_status;
+  // #ifdef _WIN32
+  //   RUN("mt.exe -nologo -manifest dev/build/UTF8.manifest "
+  //       "-outputresource:out/exe/doc_example_program.exe;#1");
+  // #endif
 
   cc_status = COMPILE(CC, "", "", " dev/raw_file_to_png.c",
                       "out/exe/raw_file_to_png" BIN_EXT, CFLAGS, "");
