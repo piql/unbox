@@ -138,7 +138,6 @@ int main(int argc, char *argv[]) {
   int cc_status;
 
   Slice doc = mapFile("doc/DETAILED.md");
-  printf("doc: %p, %zu\n", doc.data, doc.size);
   MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
                                    .in_code_block = false};
   size_t n = 0;
@@ -150,14 +149,9 @@ int main(int argc, char *argv[]) {
   }
   fclose(c);
   unmapFile(doc);
-#ifdef _WIN32
-  cc_status = COMPILE(CC, "", "", " dev/doc_example_program.c",
-                      "out/exe/doc_example_program" BIN_EXT, "", "");
-#else
   cc_status = COMPILE(CC, DEFINES, UNBOXING_INCLUDES,
                       UNBOXING_SOURCES " dev/doc_example_program.c",
                       "out/exe/doc_example_program" BIN_EXT, CFLAGS, LFLAGS);
-#endif
 #ifdef _WIN32
   RUN("del *.obj");
 #endif
@@ -168,7 +162,7 @@ int main(int argc, char *argv[]) {
       "-outputresource:out/exe/doc_example_program.exe;#1");
 #endif
 
-  cc_status = COMPILE(CC, "", "", " dev/raw_file_to_png.c",
+  cc_status = COMPILE(CC, DEFINES, "", " dev/raw_file_to_png.c",
                       "out/exe/raw_file_to_png" BIN_EXT, CFLAGS, "");
 #ifdef _WIN32
   RUN("del *.obj");
