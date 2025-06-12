@@ -127,78 +127,79 @@ bool has_arg(int argc, char *argv[], const char *arg) {
 #define BIN_EXT ""
 #endif
 
+#ifdef _WIN32
+#define BUILD_STMT(cc, defines, includes, sources, output, cflags, lflags,     \
+                   status_variable)                                            \
+  status_variable =                                                            \
+      COMPILE(cc, defines, includes, sources, output BIN_EXT, cflags, lflags); \
+  RUN("del *.obj");                                                            \
+  if (status_variable != 0)                                                    \
+    return status_variable;                                                    \
+  RUN("mt.exe -nologo -manifest dev/build/UTF8.manifest "                      \
+      "-outputresource:" output BIN_EXT ";#1");
+#else
+#define BUILD_STMT(cc, defines, includes, sources, output, cflags, lflags,     \
+                   status_variable)                                            \
+  status_variable =                                                            \
+      COMPILE(cc, defines, includes, sources, output BIN_EXT, cflags, lflags); \
+  if (status_variable != 0)                                                    \
+    return status_variable;
+#endif
+
 int main(int argc, char *argv[]) {
-  mkdir("out", 0755);
-  mkdir("out/exe", 0755);
+  { // Setup
+    mkdir("out", 0755);
+    mkdir("out/exe", 0755);
 
 #ifndef RELEASE
-  mkdir(".vscode", 0755);
-  writeVSCodeInfo(INCLUDES, DEFINES);
+    mkdir(".vscode", 0755);
+    writeVSCodeInfo(INCLUDES, DEFINES);
 #endif
-  int cc_status;
-
-  Slice doc = mapFile("doc/DETAILED.md");
-  MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
-                                   .in_code_block = false};
-  size_t n = 0;
-  Slice line;
-  FILE *c = fopen("dev/doc_example_program.c", "wb");
-  while (nextCodeLine(&it, &line)) {
-    fwrite(line.data, 1, line.size, c);
-    fputc('\n', c);
   }
-  fclose(c);
-  unmapFile(doc);
-  cc_status = COMPILE(CC, DEFINES, UNBOXING_INCLUDES " -Idep/unboxing/tests/testutils/src",
-                      UNBOXING_SOURCES " dev/doc_example_program.c",
-                      "out/exe/doc_example_program" BIN_EXT, CFLAGS, LFLAGS);
-#ifdef _WIN32
-  RUN("del *.obj");
-#endif
-  if (cc_status != 0)
-    return cc_status;
-#ifdef _WIN32
-  RUN("mt.exe -nologo -manifest dev/build/UTF8.manifest "
-      "-outputresource:out/exe/doc_example_program.exe;#1");
-#endif
 
-  cc_status = COMPILE(CC, DEFINES, "", " dev/raw_file_to_png.c",
-                      "out/exe/raw_file_to_png" BIN_EXT, CFLAGS, "");
-#ifdef _WIN32
-  RUN("del *.obj");
-#endif
-  if (cc_status != 0)
-    return cc_status;
-#ifdef _WIN32
-  RUN("mt.exe -nologo -manifest dev/build/UTF8.manifest "
-      "-outputresource:out/exe/raw_file_to_png.exe;#1");
-#endif
-  cc_status = COMPILE(CC, DEFINES, INCLUDES, SOURCES " src/main.c",
-                      "out/exe/unbox" BIN_EXT, CFLAGS, LFLAGS);
-#ifdef _WIN32
-  RUN("del *.obj");
-#endif
-  if (cc_status != 0)
-    return cc_status;
-#ifdef _WIN32
-  RUN("mt.exe -nologo -manifest dev/build/UTF8.manifest "
-      "-outputresource:out/exe/unbox.exe;#1");
-#else
-  RUN("date; ls -lAh --color=always out/exe");
-#endif
-  if (has_arg(argc, argv, "run") ||
+  { // Generate doc example program
+    Slice doc = mapFile("doc/DETAILED.md");
+    MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
+                                     .in_code_block = false};
+    size_t n = 0;
+    Slice line;
+    FILE *c = fopen("dev/doc_example_program.c", "wb");
+    while (nextCodeLine(&it, &line)) {
+      fwrite(line.data, 1, line.size, c);
+      fputc('\n', c);
+    }
+    fclose(c);
+    unmapFile(doc);
+  }
+
+  { // Perform builds
+    int cc_status;
+    BUILD_STMT(CC, DEFINES,
+               UNBOXING_INCLUDES " -Idep/unboxing/tests/testutils/src",
+               UNBOXING_SOURCES " dev/doc_example_program.c",
+               "out/exe/doc_example_program", CFLAGS, LFLAGS, cc_status)
+    BUILD_STMT(CC, DEFINES, "", " dev/raw_file_to_png.c",
+               "out/exe/raw_file_to_png", CFLAGS, "", cc_status)
+    BUILD_STMT(CC, DEFINES, INCLUDES, SOURCES " src/main.c", "out/exe/unbox",
+               CFLAGS, LFLAGS, cc_status)
+  }
+
+  { // Run unbox
+    if (has_arg(argc, argv, "run") ||
 #ifdef TEST
-      true
+        true
 #else
-      false
+        false
 #endif
-  ) {
+    ) {
 #ifdef TARGET_WINDOWS
-    return RUN("wine out/exe/unbox" BIN_EXT
-               " dep/ivm_testdata/reel/png out/data");
+      return RUN("wine out/exe/unbox" BIN_EXT
+                 " dep/ivm_testdata/reel/png out/data");
 #else
-    return RUN("./out/exe/unbox" BIN_EXT " dep/ivm_testdata/reel/png out/data");
+      return RUN("./out/exe/unbox" BIN_EXT
+                 " dep/ivm_testdata/reel/png out/data");
 #endif
+    }
   }
   return EXIT_SUCCESS;
 }

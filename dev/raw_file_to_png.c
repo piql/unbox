@@ -240,7 +240,8 @@ int main(int argc, char *argv[]) {
 #ifdef _WIN32
   HANDLE threads[THREAD_COUNT];
   for (unsigned i = 0; i < THREAD_COUNT; i++) {
-    HANDLE thread = CreateThread(NULL, 0, frameGeneratorWorker, NULL, 0, NULL);
+    HANDLE thread = CreateThread(
+        NULL, 0, (LPTHREAD_START_ROUTINE)frameGeneratorWorker, NULL, 0, NULL);
     if (thread == NULL) {
       fprintf(stderr, "Failed to create thread\n");
       return EXIT_FAILURE;
