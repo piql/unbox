@@ -87,7 +87,7 @@ static bool generateFramePng(const char *const restrict output_path,
 
   uint8_t *const out_data = (uint8_t *)output_image->data;
   if (color_depth == 8)
-    memcpy(out_data, data, frame_size);
+    return stbi_write_png(output_path, width, height, 1, data, width) != 0;
   else if (color_depth == 2) {
     for (unsigned i = 0; i < frame_size >> 2; i++) {
 #if BYTE_ORDER == LITTLE_ENDIAN
