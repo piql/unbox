@@ -41,9 +41,13 @@ bool nextCodeLine(MarkdownCodeBlockIteratorC *it, Slice *code_line) {
         continue;
       }
       *code_line = line;
+      printf("it { i = %zu, in_code_block = %s }\n", it->lit.i,
+             it->in_code_block ? "true" : "false");
       return true;
     } else if (line.size == 4 && strncmp(line.data, "```c", 4) == 0)
       it->in_code_block = true;
   }
+  printf("it { i = %zu, in_code_block = %s }\n", it->lit.i,
+         it->in_code_block ? "true" : "false");
   return false;
 }

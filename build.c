@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
   FILE *c = fopen("dev/doc_example_program.c", "wb");
   printf("c: %p\n", c);
   while (nextCodeLine(&it, &line)) {
-    printf("line: %.*s\n", (int)line.size, line.data);
+    printf("line: %.*s\n", (int)line.size, (char *)line.data);
     printf("fwrite(...): %zu\n", fwrite(line.data, 1, line.size, c));
     printf("fputc(): %d\n", fputc('\n', c));
   }
