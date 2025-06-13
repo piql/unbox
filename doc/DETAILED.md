@@ -112,7 +112,7 @@ search paths, as well as the
 static boxing_image8 LOAD_IMAGE_SOMEHOW(int frame_id) {
   char path[256];
   snprintf(path, sizeof path, "dep/ivm_testdata/reel/png/%06d.png", frame_id);
-  printf("loading: %s\n", path);
+  fprintf(stderr, "LOAD_IMAGE_SOMEHOW(%d): loading %s\n", frame_id, path);
   int width;
   int height;
   unsigned char *data = stbi_load(path, &width, &height, NULL, 1);
@@ -348,8 +348,6 @@ for (int current_frame = toc_file->start_frame; current_frame <= toc_file->end_f
   int extract_result;
   int decode_result = boxing_unboxer_unbox(&data, metadata_list, &image, unboxer, &extract_result, NULL, BOXING_METADATA_CONTENT_TYPES_TOC);
   if (extract_result != BOXING_UNBOXER_OK || decode_result != BOXING_UNBOXER_OK) {
-    free(image.data);
-    free(data.buffer);
     return EXIT_FAILURE;
   }
   table_of_contents = realloc(table_of_contents, table_of_contents_size + data.size);
@@ -377,10 +375,96 @@ printf("Table of Contents (%zu): %.*s\n", table_of_contents_size, (int)table_of_
 
 ## Parsing the Table of Contents and decoding the rest of the files on the film
 
-(In progress...)
+For this example we will continue using the `afs` library, so we'll need another
+include directive:
+
+```c
+#include <tocdata_c.h>
+```
+
+Parsing the table of contents is very similar to parsing the control frame data:
+
+```c
+table_of_contents = realloc(table_of_contents, table_of_contents_size + 1);
+((char *)table_of_contents)[table_of_contents_size] = '\0';
+table_of_contents_size++;
+
+afs_toc_data *toc = afs_toc_data_create();
+afs_toc_data_load_string(toc, table_of_contents);
+```
+
+Once the Table of Contents is loaded, we can start looking at what files are
+stored on the film:
+
+```c
+afs_toc_data_reel *reel = afs_toc_data_reels_get_reel(toc->reels, 0);
+unsigned file_count = afs_toc_data_reel_file_count(reel);
+for (unsigned i = 0; i < file_count; i++) {
+  afs_toc_file *file = afs_toc_data_reel_get_file_by_index(reel, i);
+  printf("Found file named '%s' with size %zu starting at frame %d with checksum: %s\n", file->name, (size_t)file->size, file->start_frame, file->checksum);
+```
+
+And to unbox a file, we use an essentially identical method to unboxing the
+table of contents. We can reuse the same unboxer object we used for the table of
+contents:
+
+```c
+void *file_data = NULL;
+size_t file_size = 0;
+for (int current_frame = file->start_frame; current_frame <= file->end_frame; current_frame++) {
+  boxing_image8 image = LOAD_IMAGE_SOMEHOW(current_frame);
+  gvector data = {
+    .buffer = NULL,
+    .size = 0,
+    .item_size = 1,
+    .element_free = NULL,
+  };
+  int extract_result;
+  int decode_result = boxing_unboxer_unbox(&data, metadata_list, &image, unboxer, &extract_result, NULL, BOXING_METADATA_CONTENT_TYPES_DATA);
+
+  if (extract_result != BOXING_UNBOXER_OK || decode_result != BOXING_UNBOXER_OK) {
+    return EXIT_FAILURE;
+  }
+
+  file_data = realloc(file_data, file_size + data.size);
+  memcpy((char *)file_data + file_size, data.buffer, data.size);
+  file_size += data.size;
+  free(image.data);
+  free(data.buffer);
+}
+```
+
+Again we offset by start_byte and limit by file size:
+
+```c
+memmove(file_data, (char *)file_data + file->start_byte, file->size);
+file_data = realloc(file_data, file->size);
+file_size = file->size;
+```
+
+Now we are ready to for example output our file to disk:
+
+```c
+printf("Writing file: '%s' (size: %zu)\n", file->name, file->size);
+FILE *f = fopen(file->name, "w");
+fwrite(file_data, 1, file_size, f);
+fclose(f);
+```
+
+You may want additional code to create subdirectories before attempting to open
+and write a file, as well as checking the return values of fopen / fwrite.
+
+You will be able to verify the checksums of the file with a SHA1 command line
+tool (like `sha1sum` on unix systems).
+
+<!-- TODO: SHA1 implementation? -->
 
 <!--
 ```c
+      free(file_data);
+      break;
+    }
+    afs_toc_data_free(toc);
     free(table_of_contents);
     boxing_metadata_list_free(metadata_list);
     boxing_unboxer_free(unboxer);
