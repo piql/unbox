@@ -116,6 +116,14 @@ static boxing_image8 LOAD_IMAGE_SOMEHOW(int frame_id) {
   int width;
   int height;
   unsigned char *data = stbi_load(path, &width, &height, NULL, 1);
+  // Skip upscaling for the control frame, it's already parseable at 4k
+  if (frame_id == 1)
+    return (boxing_image8){
+      .width = width,
+      .height = height,
+      .is_owning_data = DFALSE,
+      .data = data,
+    };
   unsigned char *scaled_data = malloc((width * 3) * (height * 3));
   // TODO: optimize, this is a very slow upscaling algorithm
   for (int y = 0; y < height; y++) {
@@ -195,6 +203,8 @@ unsigned char *IMAGE_DATA;
 ```
 -->
 
+### Loading image data
+
 In order to provide the image data to the library we need to load the scanned
 image into memory, and get the image width and height. The pixel format (in
 `IMAGE_DATA`) is expected to be inverted, and a 1 byte per pixel grayscale
@@ -211,6 +221,8 @@ boxing_image8 image = {
     .data = IMAGE_DATA,
 };
 ```
+
+### Performing the decoding
 
 We also need to construct a `gvector` value and `extract_result` integer to hold
 the resulting data from decoding the frame, and the error code from extracting
@@ -262,8 +274,8 @@ of the reel.
 ## Parsing the control frame and unboxing the Table of Contents
 
 There are many ways to parse the control frame data. Piql provides a "built-in"
-and self-contained way which is printed along the reel alongside the unboxing
-code. This is the `afs` library.
+and self-contained way which is printed in the representation information within
+the reel along with the unboxing source code. This is the `afs` library.
 
 First we'll need to add some more includes to our project:
 
@@ -331,7 +343,9 @@ boxing_unboxer *unboxer = boxing_unboxer_create(&parameters);
 Following this newly created unboxer, we can start decoding table of contents by
 iterating through the frames (keep in mind you also need to implement a method
 of loading each scanned image file on demand) and concatenating all the data
-results into one big buffer:
+results into one big buffer. Refer to the section on
+[loading image data](#loading-image-data) for more information on how
+`LOAD_IMAGE_SOMEHOW` could be implemented.
 
 ```c
 void *table_of_contents = NULL;
