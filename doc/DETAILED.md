@@ -445,7 +445,7 @@ file_size = file->size;
 Now we are ready to for example output our file to disk:
 
 ```c
-printf("Writing file: '%s' (size: %zu)\n", file->name, file->size);
+printf("Writing file: '%s' (size: %zu)\n", file->name, (size_t)file->size);
 FILE *f = fopen(file->name, "w");
 fwrite(file_data, 1, file_size, f);
 fclose(f);
