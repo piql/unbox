@@ -406,9 +406,14 @@ for (unsigned i = 0; i < file_count; i++) {
 
 And to unbox a file, we use an essentially identical method to unboxing the
 table of contents. We can reuse the same unboxer object we used for the table of
-contents:
+contents, but it's important to call `boxing_unboxer_reset` between each range
+of frames to support striped reels (the unboxer retains some state in the case
+of striped reels, and it should be flushed once you are done reading a full
+file, so the striped decoding can restart from a stable starting state):
 
 ```c
+boxing_unboxer_reset(unboxer);
+
 void *file_data = NULL;
 size_t file_size = 0;
 for (int current_frame = file->start_frame; current_frame <= file->end_frame; current_frame++) {
@@ -449,10 +454,17 @@ printf("Writing file: '%s' (size: %zu)\n", file->name, (size_t)file->size);
 FILE *f = fopen(file->name, "w");
 fwrite(file_data, 1, file_size, f);
 fclose(f);
+free(file_data);
 ```
 
 You may want additional code to create subdirectories before attempting to open
 and write a file, as well as checking the return values of fopen / fwrite.
+
+More optimal implementations of this algorithm may want to dump the file to disk
+as it is being read, since the file may be too large to hold in entirely in
+memory. Refer to the unbox command line tool [source code](../src/main.c) for
+more information and an alternative implementation. This guide is meant to
+provide the simplest possible implementation.
 
 You will be able to verify the checksums of the file with a SHA1 command line
 tool (like `sha1sum` on unix systems).
@@ -461,7 +473,6 @@ tool (like `sha1sum` on unix systems).
 
 <!--
 ```c
-      free(file_data);
       break;
     }
     afs_toc_data_free(toc);

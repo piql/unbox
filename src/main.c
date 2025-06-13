@@ -109,6 +109,8 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
       return false;
     }
 
+    boxing_unboxer_reset(unboxer->unboxer);
+
     size_t bytes_written = 0;
     size_t bytes_to_skip = file->start_byte;
     for (int f = file->start_frame; f <= file->end_frame; f++) {
@@ -148,7 +150,6 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
       }
     }
     fclose(output_file);
-    boxing_unboxer_reset(unboxer->unboxer);
 #ifndef _WIN32
     char path[4104];
     sprintf(path, "sha1sum %s", output_file_path);
