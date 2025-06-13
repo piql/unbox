@@ -347,11 +347,14 @@ for (int current_frame = toc_file->start_frame; current_frame <= toc_file->end_f
   };
   int extract_result;
   int decode_result = boxing_unboxer_unbox(&data, metadata_list, &image, unboxer, &extract_result, NULL, BOXING_METADATA_CONTENT_TYPES_TOC);
-  if (extract_result == BOXING_UNBOXER_OK && decode_result == BOXING_UNBOXER_OK) {
-    table_of_contents = realloc(table_of_contents, table_of_contents_size + data.size);
-    memcpy((char *)table_of_contents + table_of_contents_size, data.buffer, data.size);
-    table_of_contents_size += data.size;
+  if (extract_result != BOXING_UNBOXER_OK || decode_result != BOXING_UNBOXER_OK) {
+    free(image.data);
+    free(data.buffer);
+    return EXIT_FAILURE;
   }
+  table_of_contents = realloc(table_of_contents, table_of_contents_size + data.size);
+  memcpy((char *)table_of_contents + table_of_contents_size, data.buffer, data.size);
+  table_of_contents_size += data.size;
   free(image.data);
   free(data.buffer);
 }
@@ -369,7 +372,7 @@ table_of_contents_size = toc_file->size;
 After all this we can finally attempt to print our table of contents data:
 
 ```c
-printf("%.*s\n", (int)table_of_contents_size, (char *)table_of_contents);
+printf("Table of Contents (%zu): %.*s\n", table_of_contents_size, (int)table_of_contents_size, (char *)table_of_contents);
 ```
 
 ## Parsing the Table of Contents and decoding the rest of the files on the film
