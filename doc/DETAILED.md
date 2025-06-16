@@ -481,7 +481,8 @@ more information and an alternative implementation. This guide is meant to
 provide the simplest possible implementation.
 
 You will be able to verify the checksums of the file with a SHA1 command line
-tool (like `sha1sum` on unix systems).
+tool (like `sha1sum` on unix systems). [An implementation](../dev/sha1.c) of a
+simple command-line tool is included in this project for completeness.
 
 <!-- TODO: SHA1 implementation? -->
 

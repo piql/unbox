@@ -150,11 +150,7 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
       }
     }
     fclose(output_file);
-#ifndef _WIN32
-    char path[4104];
-    sprintf(path, "sha1sum %s", output_file_path);
-    system(path);
-#endif
+    // TODO: consider using sha1.c to output sha1 of the written file here
   }
   afs_toc_data_free(toc);
   return true;

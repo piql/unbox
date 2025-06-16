@@ -8,7 +8,6 @@ set -e
 
 # Flags:
 #   -DRELEASE - Build in release mode
-#   -DTEST - Test (run unbox)
 #   -DASAN - Enable address sanitizer (When not release mode)
 #   -DTARGET_WINDOWS - Build for Windows (Requires `zig` in path)
 
@@ -185,24 +184,6 @@ int main(int argc, char *argv[]) {
                "out/exe/raw_file_to_png", CFLAGS, "", cc_status);
     BUILD_STMT(CC, DEFINES, INCLUDES, SOURCES " src/main.c", "out/exe/unbox",
                CFLAGS, LFLAGS, cc_status);
-  }
-
-  { // Run unbox
-    if (has_arg(argc, argv, "run") ||
-#ifdef TEST
-        true
-#else
-        false
-#endif
-    ) {
-#ifdef TARGET_WINDOWS
-      return RUN("wine out/exe/unbox" BIN_EXT
-                 " dep/ivm_testdata/reel/png out/data");
-#else
-      return RUN("./out/exe/unbox" BIN_EXT
-                 " dep/ivm_testdata/reel/png out/data");
-#endif
-    }
   }
   return EXIT_SUCCESS;
 }
