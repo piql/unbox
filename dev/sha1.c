@@ -1,3 +1,11 @@
+#ifdef _WIN32
+#include <windows.h>
+#define BYTE_ORDER 1234
+#define LITTLE_ENDIAN 1234
+#elif defined(__APPLE__)
+#else
+#include <endian.h>
+#endif
 #include <stdint.h>
 #include <string.h>
 
@@ -104,8 +112,6 @@ static void SHA1_update(SHA1 *h, unsigned char *message, uint64_t size) {
   }
 }
 
-#include <arpa/inet.h>
-
 static void SHA1_digest(SHA1 *h, uint32_t output[5]) {
   uint8_t w[128] = {0};
   uint64_t r = h->total_size % 64;
@@ -127,7 +133,13 @@ static void SHA1_digest(SHA1 *h, uint32_t output[5]) {
   w[r++] = size_in_bits >> 0x00;
   SHA1_compress(h, w, r / 64);
   for (uint8_t i = 0; i < 5; i++)
-    output[i] = htonl(h->h[i]);
+    output[i] =
+#if BYTE_ORDER == LITTLE_ENDIAN
+        (((h->h[i] >> 24) & 0xFF) << 0) | (((h->h[i] >> 16) & 0xFF) << 8) |
+        (((h->h[i] >> 8) & 0xFF) << 16) | (((h->h[i] >> 0) & 0xFF) << 24);
+#else
+        h->h[i];
+#endif
   *h = SHA1_init();
 }
 
