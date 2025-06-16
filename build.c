@@ -140,10 +140,12 @@ bool has_arg(int argc, char *argv[], const char *arg) {
 #else
 #define BUILD_STMT(cc, defines, includes, sources, output, cflags, lflags,     \
                    status_variable)                                            \
-  status_variable =                                                            \
-      COMPILE(cc, defines, includes, sources, output BIN_EXT, cflags, lflags); \
-  if (status_variable != 0)                                                    \
-    return status_variable;
+  do {                                                                         \
+    status_variable = COMPILE(cc, defines, includes, sources, output BIN_EXT,  \
+                              cflags, lflags);                                 \
+    if (status_variable != 0)                                                  \
+      return status_variable;                                                  \
+  } while (0)
 #endif
 
 int main(int argc, char *argv[]) {
@@ -174,13 +176,15 @@ int main(int argc, char *argv[]) {
 
   { // Perform builds
     int cc_status;
+    BUILD_STMT(CC, "", "", " dev/sha1.c", "out/exe/sha1", CFLAGS, "",
+               cc_status);
     BUILD_STMT(CC, DEFINES, INCLUDES " -Idep/unboxing/tests/testutils/src",
                SOURCES " dev/doc_example_program.c",
-               "out/exe/doc_example_program", CFLAGS, LFLAGS, cc_status)
+               "out/exe/doc_example_program", CFLAGS, LFLAGS, cc_status);
     BUILD_STMT(CC, DEFINES, "", " dev/raw_file_to_png.c",
-               "out/exe/raw_file_to_png", CFLAGS, "", cc_status)
+               "out/exe/raw_file_to_png", CFLAGS, "", cc_status);
     BUILD_STMT(CC, DEFINES, INCLUDES, SOURCES " src/main.c", "out/exe/unbox",
-               CFLAGS, LFLAGS, cc_status)
+               CFLAGS, LFLAGS, cc_status);
   }
 
   { // Run unbox

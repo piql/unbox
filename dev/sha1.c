@@ -23,8 +23,6 @@ static SHA1 SHA1_init(void) {
 
 #define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
 
-#include <stdio.h>
-
 static void SHA1_compress(SHA1 *h, unsigned char *blocks, uint64_t count) {
   // printf("\nSHA1_compress(h, blocks, %lu)\n          ", count);
   uint32_t w[80];
@@ -133,6 +131,53 @@ static void SHA1_digest(SHA1 *h, uint32_t output[5]) {
   *h = SHA1_init();
 }
 
+// CLI tool
+
+#include "../src/map_file.c"
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[]) {
+  if (argc == 1) {
+    SHA1 h = SHA1_init();
+    unsigned char buf[64];
+    for (;;) {
+      size_t bytes_read = fread(buf, 1, 64, stdin);
+      SHA1_update(&h, buf, bytes_read);
+      if (bytes_read < 64) {
+        int err;
+        if ((err = ferror(stdin))) {
+          fprintf(stderr, "%s\n", strerror(err));
+          return EXIT_FAILURE;
+        } else
+          break;
+      }
+    }
+    uint32_t digest[5];
+    SHA1_digest(&h, digest);
+    for (uint8_t i = 0; i < sizeof(digest); i++)
+      fprintf(stdout, "%02x", ((unsigned char *)digest)[i]);
+    fputs("  -\n", stdout);
+    return EXIT_SUCCESS;
+  }
+  SHA1 h = SHA1_init();
+  uint32_t digest[5];
+  for (int i = 1; i < argc; i++) {
+    Slice file = mapFile(argv[i]);
+    if (!file.data) {
+      fprintf(stderr, "Failed to read file: %s\n", argv[i]);
+      return EXIT_FAILURE;
+    }
+    SHA1_update(&h, file.data, file.size);
+    unmapFile(file);
+    SHA1_digest(&h, digest);
+    for (uint8_t i = 0; i < sizeof(digest); i++)
+      fprintf(stdout, "%02x", ((unsigned char *)digest)[i]);
+    fprintf(stdout, "  %s\n", argv[i]);
+  }
+  return EXIT_SUCCESS;
+}
+
 // static void SHA1_print(SHA1 *h) {
 //   uint32_t array[5] = {0};
 //   SHA1_digest(h, array);
@@ -156,8 +201,6 @@ static void SHA1_digest(SHA1 *h, uint32_t output[5]) {
 //   return SHA1_test_len(s, strlen(s), expected, replacement_string);
 // }
 
-// #include "../src/map_file.c"
-
 // int main(void) {
 //   SHA1_test("", "da39a3ee5e6b4b0d3255bfef95601890afd80709", NULL);
 //   SHA1_test("The quick brown fox jumps over the lazy dog",
@@ -179,15 +222,16 @@ static void SHA1_digest(SHA1 *h, uint32_t output[5]) {
 //   printf("\nexpected: %s\n", "2fd4e1c67a2d28fced849ee1bb76e7391b93eb12");
 //   Slice file = mapFile("../../../../Documents/reel.raw");
 //   uint32_t randoms[] = {
-//       489,  1981, 1944, 1381, 2843, 3404, 1603, 2354, 1562, 2907, 283,  3937,
-//       661,  2049, 2904, 1358, 2616, 1294, 2416, 918,  2147, 2977, 595,  1333,
-//       3799, 2572, 1548, 2398, 2719, 1507, 53,   1182, 3561, 2595, 1007, 876,
-//       1201, 1696, 3583, 3938, 1798, 236,  2906, 2075, 3603, 782,  1165, 3621,
-//       329,  1153, 745,  3547, 1799, 3005, 3326, 2432, 3645, 3808, 2379, 3387,
-//       3817, 2024, 936,  256,  873,  2198, 1073, 2502, 28,   2852, 717,  2682,
-//       2096, 3202, 481,  2586, 1522, 3966, 3858, 1929, 1715, 283,  1514, 2562,
-//       1609, 2614, 3315, 1891, 2244, 3319, 927,  232,  2225, 2121, 3645, 491,
-//       561,  1712, 3196, 136};
+//       489,  1981, 1944, 1381, 2843, 3404, 1603, 2354, 1562, 2907, 283,
+//       3937, 661,  2049, 2904, 1358, 2616, 1294, 2416, 918,  2147, 2977,
+//       595,  1333, 3799, 2572, 1548, 2398, 2719, 1507, 53,   1182, 3561,
+//       2595, 1007, 876, 1201, 1696, 3583, 3938, 1798, 236,  2906, 2075,
+//       3603, 782,  1165, 3621, 329,  1153, 745,  3547, 1799, 3005, 3326,
+//       2432, 3645, 3808, 2379, 3387, 3817, 2024, 936,  256,  873,  2198,
+//       1073, 2502, 28,   2852, 717,  2682, 2096, 3202, 481,  2586, 1522,
+//       3966, 3858, 1929, 1715, 283,  1514, 2562, 1609, 2614, 3315, 1891,
+//       2244, 3319, 927,  232,  2225, 2121, 3645, 491, 561,  1712, 3196,
+//       136};
 //   size_t bytes_hashed = 0;
 //   SHA1 h2 = SHA1_init();
 //   uint8_t r = 0;
