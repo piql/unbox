@@ -7,3 +7,4 @@ reel
 build
 build.exe
 dev/doc_example_program.c
+doc/*.pdf
