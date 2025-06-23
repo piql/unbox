@@ -13,3 +13,6 @@
 [submodule "dep/rpmalloc"]
 	path = dep/rpmalloc
 	url = git@github.com:mjansson/rpmalloc
+[submodule "dep/raylib"]
+	path = dep/raylib
+	url = git@github.com:raysan5/raylib

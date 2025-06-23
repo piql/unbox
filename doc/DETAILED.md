@@ -1,4 +1,4 @@
-# How to decode data from piqlFilm - detailed explanation
+# Data Decoding Description - How to decode data from piqlFilm - detailed explanation
 
 This explanation will focus mainly on usage of the unboxing library in order to
 decode a full piqlFilm. In the future it may also cover building the library and

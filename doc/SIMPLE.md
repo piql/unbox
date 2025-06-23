@@ -1,4 +1,4 @@
-# How to decode data from piqlFilm - high-level explanation
+# Data Decoding Description - How to decode data from piqlFilm - high-level explanation
 
 ## Getting physical scans into a digital format
 

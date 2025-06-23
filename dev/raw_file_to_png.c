@@ -105,7 +105,7 @@ static bool generateFramePng(const char *const restrict output_path,
 #endif
     }
   } else if (color_depth == 1) {
-    for (unsigned i = 0; i < frame_size / 8; i++) {
+    for (unsigned i = 0; i < frame_size >> 3; i++) {
       out_data[i * 8 + 0] = ((data[i] & (1 << 0)) >> 0) * 255;
       out_data[i * 8 + 1] = ((data[i] & (1 << 1)) >> 1) * 255;
       out_data[i * 8 + 2] = ((data[i] & (1 << 2)) >> 2) * 255;
