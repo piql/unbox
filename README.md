@@ -1,6 +1,8 @@
 # Unboxing Command-line tool
 
-See [doc/SIMPLE.md](doc/SIMPLE.md) for a guide on how to decode frames. This project is a decoder for folders of image files containing scanned piqlFilm frames.
+See [doc/SIMPLE.md](doc/SIMPLE.md) for a guide on how to decode frames. This
+project is a decoder for folders of image files containing scanned piqlFilm
+frames.
 
 ## Project organization
 
@@ -28,6 +30,7 @@ See [doc/SIMPLE.md](doc/SIMPLE.md) for a guide on how to decode frames. This pro
 cc -o build build.c && ./build
 ./build.c -DRELEASE
 ```
+
 <!--
 ## Preliminary plan for reading
 
