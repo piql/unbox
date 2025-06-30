@@ -1,5 +1,7 @@
 # Unboxing Command-line tool
 
+See [doc/SIMPLE.md](doc/SIMPLE.md) for a guide on how to decode frames. This project is a decoder for folders of image files containing scanned piqlFilm frames.
+
 ## Project organization
 
 - `dep` - Dependencies (as git submodules):
@@ -22,10 +24,11 @@
 ## Building
 
 ```sh
-./build.c
+./build.c # or
+cc -o build build.c && ./build
 ./build.c -DRELEASE
 ```
-
+<!--
 ## Preliminary plan for reading
 
 1. CLI arg #1: folder input
@@ -53,3 +56,4 @@
 
 - Cache the last read frame between files, usually files overlap, and we don't
   want to unbox the same frame twice
+-->
