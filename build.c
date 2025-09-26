@@ -63,7 +63,7 @@ exit $?
 #define CC "zig cc"
 #define CC_DEFINES ""
 #define CFLAGS                                                                 \
-  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99"
+  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Werror -std=c99 -static"
 #elif defined(RELEASE) && defined(TARGET_WINDOWS)
 #define CC "zig cc"
 #define CC_DEFINES ""
@@ -180,8 +180,8 @@ int main(int argc, char *argv[]) {
     BUILD_STMT(CC, DEFINES, INCLUDES " -Idep/unboxing/tests/testutils/src",
                SOURCES " dev/doc_example_program.c",
                "out/exe/doc_example_program", CFLAGS, LFLAGS, cc_status);
-    BUILD_STMT(CC, DEFINES, "", " dev/raw_file_to_png.c",
-               "out/exe/raw_file_to_png", CFLAGS, "", cc_status);
+    BUILD_STMT(CC, DEFINES, UNBOXING_INCLUDES, UNBOXING_SOURCES " dev/raw_file_to_png.c",
+               "out/exe/raw_file_to_png", CFLAGS, UNBOXING_LFLAGS, cc_status);
     BUILD_STMT(CC, DEFINES, INCLUDES, SOURCES " src/main.c", "out/exe/unbox",
                CFLAGS, LFLAGS, cc_status);
   }
