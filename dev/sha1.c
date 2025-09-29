@@ -122,16 +122,16 @@ static void SHA1_digest(SHA1 *h, uint32_t output[5]) {
   w[r++] = 0x80;
   while (r % 64 != 56)
     w[r++] = 0;
-  size_t size_in_bits = h->total_size * 8;
+  uint64_t size_in_bits = (uint64_t)h->total_size * 8;
   // printf("r: %lu\n", r);
-  w[r++] = (uint8_t)((size_t)(size_in_bits >> 0x38));
-  w[r++] = (uint8_t)((size_t)(size_in_bits >> 0x30));
-  w[r++] = (uint8_t)((size_t)(size_in_bits >> 0x28));
-  w[r++] = (uint8_t)((size_t)(size_in_bits >> 0x20));
-  w[r++] = (uint8_t)((size_t)(size_in_bits >> 0x18));
-  w[r++] = (uint8_t)((size_t)(size_in_bits >> 0x10));
-  w[r++] = (uint8_t)((size_t)(size_in_bits >> 0x08));
-  w[r++] = (uint8_t)((size_t)(size_in_bits >> 0x00));
+  w[r++] = (uint8_t)(size_in_bits >> 0x38);
+  w[r++] = (uint8_t)(size_in_bits >> 0x30);
+  w[r++] = (uint8_t)(size_in_bits >> 0x28);
+  w[r++] = (uint8_t)(size_in_bits >> 0x20);
+  w[r++] = (uint8_t)(size_in_bits >> 0x18);
+  w[r++] = (uint8_t)(size_in_bits >> 0x10);
+  w[r++] = (uint8_t)(size_in_bits >> 0x08);
+  w[r++] = (uint8_t)(size_in_bits >> 0x00);
   SHA1_compress(h, w, r / 64);
   for (uint8_t i = 0; i < 5; i++)
     output[i] =
