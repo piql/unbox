@@ -31,12 +31,12 @@ jobs:
           submodules: "recursive"
       - name: Build
         run: ${{ matrix.build_command }}
-      - name: Test
-        run: ${{ matrix.run_command }}
-      - name: Doc Test
-        run: ${{ matrix.doctest_command }}
       - name: Upload debug binary
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: out/exe/*
+      - name: Test
+        run: ${{ matrix.run_command }}
+      - name: Doc Test
+        run: ${{ matrix.doctest_command }}
