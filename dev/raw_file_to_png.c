@@ -49,8 +49,8 @@ typedef struct {
   uint8_t crc[8];
 } RawFileFooter;
 
-static int writeCRC64(const unsigned char crc[static const 8],
-                      char out[static const 17]) {
+static int writeCRC64(const unsigned char *restrict const crc,
+                      char *restrict const out) {
   return snprintf(out, 17,
                   "%02" PRIx8 "%02" PRIx8 "%02" PRIx8 "%02" PRIx8 "%02" PRIx8
                   "%02" PRIx8 "%02" PRIx8 "%02" PRIx8,
@@ -283,7 +283,10 @@ void *frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
   }
 }
 
+// void setup_debug_handlers(void);
+
 int main(int argc, char *argv[]) {
+  // setup_debug_handlers();
   if (argc < 3) {
     fprintf(stderr, "Usage: %s <input file(s) (.raw)> <output folder path>\n",
             argv[0]);
@@ -314,40 +317,47 @@ int main(int argc, char *argv[]) {
 #endif
   };
 
+  for (size_t in_file_idx = 1;
+       in_file_idx < (size_t)argc - (job == JOB_GENERATE_PNG ? 1 : 2);
+       in_file_idx++) {
 #ifdef THREADED
 #ifdef _WIN32
-  HANDLE threads[THREAD_COUNT];
-  for (unsigned i = 0; i < THREAD_COUNT; i++) {
-    HANDLE thread = CreateThread(
-        NULL, 0, (LPTHREAD_START_ROUTINE)frameGeneratorWorker, NULL, 0, NULL);
-    if (thread == NULL) {
-      fprintf(stderr, "Failed to create thread\n");
-      return EXIT_FAILURE;
+    HANDLE threads[THREAD_COUNT];
+    for (unsigned i = 0; i < THREAD_COUNT; i++) {
+      HANDLE thread = CreateThread(
+          NULL, 0, (LPTHREAD_START_ROUTINE)frameGeneratorWorker, NULL, 0, NULL);
+      if (thread == NULL) {
+        fprintf(stderr, "Failed to create thread\n");
+        if (job_list.jobs.data)
+          free(job_list.jobs.data);
+        boxing_math_crc64_free(crc);
+        return EXIT_FAILURE;
+      }
+      threads[i] = thread;
     }
-    threads[i] = thread;
-  }
 #else
-  pthread_t threads[THREAD_COUNT];
-  for (unsigned i = 0; i < THREAD_COUNT; i++) {
-    if (pthread_create(&threads[i], NULL,
-                       (void *(*)(void *))frameGeneratorWorker, &job_list)) {
-      fprintf(stderr, "Failed to create thread\n");
-      return EXIT_FAILURE;
+    pthread_t threads[THREAD_COUNT];
+    for (unsigned i = 0; i < THREAD_COUNT; i++) {
+      if (pthread_create(&threads[i], NULL,
+                         (void *(*)(void *))frameGeneratorWorker, &job_list)) {
+        fprintf(stderr, "Failed to create thread\n");
+        if (job_list.jobs.data)
+          free(job_list.jobs.data);
+        boxing_math_crc64_free(crc);
+        return EXIT_FAILURE;
+      }
     }
-  }
 #endif
 #endif
 
-  const char *folder_path = argv[argc - (job == JOB_GENERATE_PNG ? 1 : 2)];
+    const char *folder_path = argv[argc - (job == JOB_GENERATE_PNG ? 1 : 2)];
 
 #ifdef _WIN32
-  mkdir(folder_path);
+    mkdir(folder_path);
 #else
-  mkdir(folder_path, 0755);
+    mkdir(folder_path, 0755);
 #endif
 
-  for (size_t in_file_idx = 1;
-       in_file_idx < (size_t)argc - (job == JOB_GENERATE_PNG ? 1 : 2); in_file_idx++) {
     const char *input_file = argv[in_file_idx];
 
     const Slice reel = mapFile(input_file);
@@ -370,6 +380,7 @@ int main(int argc, char *argv[]) {
         if (job_list.jobs.data)
           free(job_list.jobs.data);
         unmapFile(reel);
+        boxing_math_crc64_free(crc);
         return EXIT_FAILURE;
       }
       const RawFileFooter *const footer = (const RawFileFooter *)(ptr + i);
@@ -456,37 +467,38 @@ int main(int argc, char *argv[]) {
                reel.size, i);
       }
     }
-    unmapFile(reel);
-  }
 #ifdef THREADED
 #ifdef _WIN32
-  WaitForSingleObject(job_list.mutex, INFINITE);
+    WaitForSingleObject(job_list.mutex, INFINITE);
 #else
-  pthread_mutex_lock(&job_list.mutex);
+    pthread_mutex_lock(&job_list.mutex);
 #endif
 #endif
-  job_list.done = true;
+    job_list.done = true;
 #ifdef THREADED
 #ifdef _WIN32
-  ReleaseMutex(job_list.mutex);
+    ReleaseMutex(job_list.mutex);
 #else
-  pthread_mutex_unlock(&job_list.mutex);
+    pthread_mutex_unlock(&job_list.mutex);
 #endif
 #endif
 
 #ifdef THREADED
 #ifdef _WIN32
-  WaitForMultipleObjects(THREAD_COUNT, threads, TRUE, INFINITE);
+    WaitForMultipleObjects(THREAD_COUNT, threads, TRUE, INFINITE);
 #else
-  for (unsigned i = 0; i < THREAD_COUNT; i++)
-    pthread_join(threads[i], NULL);
+    for (unsigned i = 0; i < THREAD_COUNT; i++)
+      pthread_join(threads[i], NULL);
 #endif
 #else
-  frameGeneratorWorker(&job_list);
+    frameGeneratorWorker(&job_list);
 #endif
+    unmapFile(reel);
+  }
 
   fflush(stdout);
   if (job_list.jobs.data)
     free(job_list.jobs.data);
+  boxing_math_crc64_free(crc);
   return EXIT_SUCCESS;
 }
