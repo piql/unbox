@@ -411,10 +411,19 @@ int main(int argc, char *argv[]) {
         boxing_math_crc64_reset(crc, 0);
         uint64_t checksum_from_file;
         memcpy(&checksum_from_file, &footer->crc, sizeof checksum_from_file);
-        printf("\x1b[%dm %s= %016" PRIx64 "\x1b[0m\n",
-               checksum_from_file == __builtin_bswap64(checksum) ? 92 : 91,
-               checksum_from_file == __builtin_bswap64(checksum) ? "=" : "!",
-               checksum);
+        bool eq = checksum_from_file ==
+#if BYTE_ORDER == LITTLE_ENDIAN
+#ifdef _WIN32
+                  _byteswap_uint64(checksum)
+#else
+                  __builtin_bswap64(checksum)
+#endif
+#else
+                  checksum
+#endif
+            ;
+        printf("\x1b[%dm %s= %016" PRIx64 "\x1b[0m\n", eq ? 92 : 91,
+               eq ? "=" : "!", checksum);
       } else if (job != JOB_GENERATE_READ) {
 
 #ifdef THREADED
