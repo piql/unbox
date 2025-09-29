@@ -34,7 +34,7 @@ exit $?
 #define CC "clang"
 #define CC_DEFINES ""
 #define CFLAGS                                                                 \
-  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Weverything -Werror -Wno-declaration-after-statement -Wno-padded -std=c99"
+  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Weverything -Werror -Wno-declaration-after-statement -Wno-padded -Wno-poison-system-directories -std=c99"
 #define TARGET_MACOS
 #elif defined(RELEASE) && !defined(TARGET_WINDOWS)
 #define CC "gcc"
