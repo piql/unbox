@@ -10,7 +10,11 @@
 #define UNBOXING_DEFINES " -D_DEBUG" RAND_FILE_DEFINE
 #endif
 
+#ifdef _WIN32
+#define UNBOXING_LFLAGS ""
+#else
 #define UNBOXING_LFLAGS " -lm"
+#endif
 
 #define UNBOXING_INCLUDES                                                      \
   " -Idep/unboxing/inc"                                                        \

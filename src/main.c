@@ -11,6 +11,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include <direct.h>
+#endif
 
 static bool writePathSegment(const char *const restrict input, Slice scratch,
                              unsigned *restrict cursor) {
@@ -35,7 +38,7 @@ static void ensurePathExists(const char *const restrict path) {
   for (;;) {
     if (writePathSegment(path, sliceof(buf), &cursor)) {
 #ifdef _WIN32
-      mkdir(buf);
+      _mkdir(buf);
 #else
       mkdir(buf, 0755);
 #endif
@@ -205,7 +208,7 @@ int main(int argc, char *argv[]) {
     snprintf(cachefile_path, sizeof cachefile_path,
              "%s/control_frame_%" PRIx64 ".xml", output_folder, crc);
 #ifdef _WIN32
-    mkdir(output_folder);
+    _mkdir(output_folder);
 #else
     mkdir(output_folder, 0755);
 #endif
