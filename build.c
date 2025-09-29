@@ -32,7 +32,7 @@ exit $?
   "-D_CRT_SECURE_NO_WARNINGS"
 #define CFLAGS                                                                 \
   " /fsanitize=address /guard:cf /permissive- /RTC1 /sdl /std:c11 /utf-8 "     \
-  "/validate-charset /Wall /WX /wd4464 /wd4668 /wd4820 /Zi"
+  "/validate-charset /Wall /WX /wd4464 /wd4668 /wd4820 /wd4996 /Zi"
 #define TARGET_WINDOWS
 #elif defined(__APPLE__)
 #define CC "clang"
