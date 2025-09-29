@@ -27,9 +27,7 @@ exit $?
 
 #ifdef _WIN32
 #define CC "cl.exe /nologo"
-#define CC_DEFINES                                                             \
-  " -DWIN32 -DRC_INVOKED -D_CRT_NO_POSIX_ERROR_CODES "                         \
-  "-D_CRT_SECURE_NO_WARNINGS"
+#define CC_DEFINES " -DWIN32 -D_CRT_NO_POSIX_ERROR_CODES"
 #define CFLAGS                                                                 \
   " /fsanitize=address /guard:cf /permissive- /RTC1 /sdl /std:c11 /utf-8 "     \
   "/validate-charset /Wall /WX /wd4464 /wd4668 /wd4820 /wd4996 /wd5045 /Zi"
