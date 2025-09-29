@@ -29,8 +29,8 @@ exit $?
 #define CC "cl.exe /nologo"
 #define CC_DEFINES " -DWIN32 -D_CRT_NO_POSIX_ERROR_CODES"
 #define CFLAGS                                                                 \
-  " /fsanitize=address /guard:cf /permissive- /RTC1 /sdl /std:c11 /utf-8 "     \
-  "/validate-charset /Wall /WX /wd4464 /wd4668 /wd4820 /wd4996 /wd5045 /Zi"    \
+  " /guard:cf /permissive- /RTC1 /sdl /std:c11 /utf-8 /validate-charset"       \
+  " /Wall /WX /wd4464 /wd4668 /wd4820 /wd4996 /wd5045 /Zi"                     \
   " /wd4061"                                                                   \
   " /wd4127"                                                                   \
   " /wd4191"                                                                   \
