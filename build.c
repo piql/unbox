@@ -30,7 +30,16 @@ exit $?
 #define CC_DEFINES " -DWIN32 -D_CRT_NO_POSIX_ERROR_CODES"
 #define CFLAGS                                                                 \
   " /fsanitize=address /guard:cf /permissive- /RTC1 /sdl /std:c11 /utf-8 "     \
-  "/validate-charset /Wall /WX /wd4464 /wd4668 /wd4820 /wd4996 /wd5045 /Zi"
+  "/validate-charset /Wall /WX /wd4464 /wd4668 /wd4820 /wd4996 /wd5045 /Zi"    \
+  " /wd4061"                                                                   \
+  " /wd4127"                                                                   \
+  " /wd4191"                                                                   \
+  " /wd4210"                                                                   \
+  " /wd4242"                                                                   \
+  " /wd4244"                                                                   \
+  " /wd4245"                                                                   \
+  " /wd4456"                                                                   \
+  " /wd4701"
 #define TARGET_WINDOWS
 #elif defined(__APPLE__)
 #define CC "clang"
@@ -39,8 +48,7 @@ exit $?
 #define CFLAGS                                                                 \
   " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Weverything -Werror"     \
   " -Wno-declaration-after-statement"                                          \
-  " -Wno-padded"                                                               \
-  " -Wno-poison-system-directories"                                            \
+  " -Wno-padded -Wno-poison-system-directories"                                \
   " -Wno-alloca"                                                               \
   " -Wno-bad-function-cast"                                                    \
   " -Wno-cast-align"                                                           \
