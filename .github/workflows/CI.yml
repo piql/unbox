@@ -4,6 +4,7 @@ jobs:
   build:
     name: Build & Test
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-24.04, windows-2025, macos-15]
         include:
@@ -12,16 +13,16 @@ jobs:
             run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
             doctest_command: ./out/exe/doc_example_program
             artifact_name: unbox-debug-x86_64-linux
-          - os: windows-2025
-            build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo && cl.exe /nologo build.c && mt.exe -nologo -manifest dev/build/UTF8.manifest -outputresource:build.exe;#1 && build.exe"
-            run_command: out/exe/unbox.exe dep/ivm_testdata/reel/png out/data
-            doctest_command: out/exe/doc_example_program.exe
-            artifact_name: unbox-debug-x86_64-win32
           - os: macos-15
             build_command: clang build.c -o build && ./build
             run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
             doctest_command: ./out/exe/doc_example_program
             artifact_name: unbox-debug-arm64-macos
+          - os: windows-2025
+            build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo && cl.exe /nologo build.c && mt.exe -nologo -manifest dev/build/UTF8.manifest -outputresource:build.exe;#1 && build.exe"
+            run_command: out/exe/unbox.exe dep/ivm_testdata/reel/png out/data
+            doctest_command: out/exe/doc_example_program.exe
+            artifact_name: unbox-debug-x86_64-win32
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
