@@ -37,7 +37,7 @@ exit $?
 #elif defined(__APPLE__)
 #define CC "clang"
 #define CC_DEFINES ""
-#define TMP_UNBOXING_CFLAGS                                                        \
+#define TMP_UNBOXING_CFLAGS                                                    \
   " -Wno-cast-align"                                                           \
   " -Wno-cast-qual"                                                            \
   " -Wno-comma"                                                                \
@@ -51,8 +51,7 @@ exit $?
 #define CFLAGS                                                                 \
   " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Weverything -Werror "    \
   "-Wno-declaration-after-statement -Wno-padded "                              \
-  "-Wno-poison-system-directories" TMP_UNBOXING_CFLAGS
-" -std=c99"
+  "-Wno-poison-system-directories" TMP_UNBOXING_CFLAGS " -std=c99"
 #undef TMP_UNBOXING_CFLAGS
 #define TARGET_MACOS
 #elif defined(RELEASE) && !defined(TARGET_WINDOWS)

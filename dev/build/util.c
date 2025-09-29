@@ -9,6 +9,7 @@ struct IncDefIterator {
   size_t len;
   size_t i;
 };
+
 static const char *nextIncDef(struct IncDefIterator *const it,
                               size_t *const len_out) {
   size_t len = 0;
