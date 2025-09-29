@@ -488,7 +488,8 @@ simple command-line tool is included in this project for completeness.
 
 <!--
 ```c
-      break;
+      char always = 1;
+      if (always) break;
     }
     afs_toc_data_free(toc);
     free(table_of_contents);
