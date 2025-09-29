@@ -39,7 +39,8 @@ exit $?
   " /wd4244"                                                                   \
   " /wd4245"                                                                   \
   " /wd4456"                                                                   \
-  " /wd4701"
+  " /wd4701"                                                                   \
+  " /wd4703"
 #define TARGET_WINDOWS
 #elif defined(__APPLE__)
 #define CC "clang"
