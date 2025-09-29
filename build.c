@@ -37,7 +37,12 @@ exit $?
 #elif defined(__APPLE__)
 #define CC "clang"
 #define CC_DEFINES ""
-#define TMP_UNBOXING_CFLAGS                                                    \
+
+#define CFLAGS                                                                 \
+  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Weverything -Werror"     \
+  " -Wno-declaration-after-statement"                                          \
+  " -Wno-padded"                                                               \
+  " -Wno-poison-system-directories"                                            \
   " -Wno-cast-align"                                                           \
   " -Wno-cast-qual"                                                            \
   " -Wno-comma"                                                                \
@@ -47,12 +52,8 @@ exit $?
   " -Wno-implicit-int-conversion"                                              \
   " -Wno-missing-variable-declarations"                                        \
   " -Wno-shorten-64-to-32"                                                     \
-  " -Wno-sign-conversion"
-#define CFLAGS                                                                 \
-  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Weverything -Werror "    \
-  "-Wno-declaration-after-statement -Wno-padded "                              \
-  "-Wno-poison-system-directories" TMP_UNBOXING_CFLAGS " -std=c99"
-#undef TMP_UNBOXING_CFLAGS
+  " -Wno-sign-conversion"                                                      \
+  " -std=c99"
 #define TARGET_MACOS
 #elif defined(RELEASE) && !defined(TARGET_WINDOWS)
 #define CC "gcc"
