@@ -21,10 +21,10 @@ static Slice mapFile(const char *const restrict path) {
   if (map == NULL) {
     return Slice_empty;
   }
-  void *data = MapViewOfFile(map, FILE_MAP_READ, 0, 0, size.QuadPart);
+  void *data = MapViewOfFile(map, FILE_MAP_READ, 0, 0, (size_t)size.QuadPart);
   CloseHandle(map);
   return data == NULL ? Slice_empty
-                      : (Slice){.data = data, .size = size.QuadPart};
+                      : (Slice){.data = data, .size = (size_t)size.QuadPart};
 }
 
 static void unmapFile(Slice file) { UnmapViewOfFile(file.data); }
@@ -44,10 +44,12 @@ static Slice mapFile(const char *const restrict path) {
     close(fd);
     return Slice_empty;
   }
-  void *data = mmap(NULL, statbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+  void *data =
+      mmap(NULL, (size_t)statbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
   close(fd);
-  return data == MAP_FAILED ? Slice_empty
-                            : (Slice){.data = data, .size = statbuf.st_size};
+  return data == MAP_FAILED
+             ? Slice_empty
+             : (Slice){.data = data, .size = (size_t)statbuf.st_size};
 }
 static void unmapFile(Slice file) { munmap(file.data, file.size); }
 #endif

@@ -27,14 +27,14 @@ exit $?
 
 #ifdef _WIN32
 #define CC "cl.exe /nologo"
-#define CC_DEFINES " -DWIN32 -DRC_INVOKED -D_CRT_NO_POSIX_ERROR_CODES"
-#define CFLAGS " /fsanitize=address /guard:cf /permissive- /RTC1 /sdl /std:c11 /utf-8 /validate-charset /Wall /WX /Zi"
+#define CC_DEFINES " -DWIN32 -DRC_INVOKED -D_CRT_NO_POSIX_ERROR_CODES -D_CRT_SECURE_NO_WARNINGS"
+#define CFLAGS " /fsanitize=address /guard:cf /permissive- /RTC1 /sdl /std:c11 /utf-8 /validate-charset /Wall /WX /wd4464 /wd4668 /wd4820 /Zi"
 #define TARGET_WINDOWS
 #elif defined(__APPLE__)
 #define CC "clang"
 #define CC_DEFINES ""
 #define CFLAGS                                                                 \
-  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Weverything -Werror -std=c99"
+  " -g -fsanitize=undefined -Wall -Wextra -Wpedantic -Weverything -Werror -Wno-declaration-after-statement -Wno-padded -std=c99"
 #define TARGET_MACOS
 #elif defined(RELEASE) && !defined(TARGET_WINDOWS)
 #define CC "gcc"

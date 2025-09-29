@@ -3,6 +3,7 @@
 #define BYTE_ORDER 1234
 #define LITTLE_ENDIAN 1234
 #elif defined(__APPLE__)
+#include <machine/endian.h>
 #else
 #include <endian.h>
 #endif
@@ -10,7 +11,7 @@
 #include <string.h>
 
 typedef struct {
-  uint64_t total_size;
+  size_t total_size;
   uint32_t h[5];
   uint8_t trailing[64];
 } SHA1;
@@ -31,10 +32,10 @@ static SHA1 SHA1_init(void) {
 
 #define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
 
-static void SHA1_compress(SHA1 *h, unsigned char *blocks, uint64_t count) {
+static void SHA1_compress(SHA1 *h, unsigned char *blocks, size_t count) {
   // printf("\nSHA1_compress(h, blocks, %lu)\n          ", count);
   uint32_t w[80];
-  for (uint64_t block_index = 0; block_index < count; block_index++) {
+  for (size_t block_index = 0; block_index < count; block_index++) {
     uint32_t a = h->h[0];
     uint32_t b = h->h[1];
     uint32_t c = h->h[2];
@@ -87,12 +88,12 @@ static void SHA1_compress(SHA1 *h, unsigned char *blocks, uint64_t count) {
   }
 }
 
-static void SHA1_update(SHA1 *h, unsigned char *message, uint64_t size) {
-  uint64_t trailing_size = h->total_size % 64;
-  uint64_t offset = 0;
+static void SHA1_update(SHA1 *h, unsigned char *message, size_t size) {
+  size_t trailing_size = h->total_size % 64;
+  size_t offset = 0;
   if (trailing_size) {
     // has trailer
-    uint64_t size_to_copy =
+    size_t size_to_copy =
         size < 64 - trailing_size ? size : 64 - trailing_size;
     memcpy(h->trailing + trailing_size, message, size_to_copy);
     h->total_size += size_to_copy;
@@ -100,12 +101,12 @@ static void SHA1_update(SHA1 *h, unsigned char *message, uint64_t size) {
       SHA1_compress(h, h->trailing, 1);
     offset = size_to_copy;
   }
-  uint64_t blocks = (size - offset) / 64;
+  size_t blocks = (size - offset) / 64;
   if (blocks)
     SHA1_compress(h, message + offset, blocks);
-  uint64_t processed_bytes = blocks * 64;
+  size_t processed_bytes = blocks * 64;
   h->total_size += processed_bytes;
-  uint64_t r = (size - offset) % 64; // < 64
+  size_t r = (size - offset) % 64; // < 64
   if (r) {
     memcpy(h->trailing, message + offset + processed_bytes, r);
     h->total_size += r;
@@ -114,23 +115,23 @@ static void SHA1_update(SHA1 *h, unsigned char *message, uint64_t size) {
 
 static void SHA1_digest(SHA1 *h, uint32_t output[5]) {
   uint8_t w[128] = {0};
-  uint64_t r = h->total_size % 64;
+  size_t r = h->total_size % 64;
 
   if (r)
     memcpy(w, h->trailing, r);
   w[r++] = 0x80;
   while (r % 64 != 56)
     w[r++] = 0;
-  uint64_t size_in_bits = h->total_size * 8;
+  size_t size_in_bits = h->total_size * 8;
   // printf("r: %lu\n", r);
-  w[r++] = size_in_bits >> 0x38;
-  w[r++] = size_in_bits >> 0x30;
-  w[r++] = size_in_bits >> 0x28;
-  w[r++] = size_in_bits >> 0x20;
-  w[r++] = size_in_bits >> 0x18;
-  w[r++] = size_in_bits >> 0x10;
-  w[r++] = size_in_bits >> 0x08;
-  w[r++] = size_in_bits >> 0x00;
+  w[r++] = (uint8_t)(size_in_bits >> 0x38);
+  w[r++] = (uint8_t)(size_in_bits >> 0x30);
+  w[r++] = (uint8_t)(size_in_bits >> 0x28);
+  w[r++] = (uint8_t)(size_in_bits >> 0x20);
+  w[r++] = (uint8_t)(size_in_bits >> 0x18);
+  w[r++] = (uint8_t)(size_in_bits >> 0x10);
+  w[r++] = (uint8_t)(size_in_bits >> 0x08);
+  w[r++] = (uint8_t)(size_in_bits >> 0x00);
   SHA1_compress(h, w, r / 64);
   for (uint8_t i = 0; i < 5; i++)
     output[i] =
@@ -183,8 +184,8 @@ int main(int argc, char *argv[]) {
     SHA1_update(&h, file.data, file.size);
     unmapFile(file);
     SHA1_digest(&h, digest);
-    for (uint8_t i = 0; i < sizeof(digest); i++)
-      fprintf(stdout, "%02x", ((unsigned char *)digest)[i]);
+    for (uint8_t j = 0; j < sizeof(digest); j++)
+      fprintf(stdout, "%02x", ((unsigned char *)digest)[j]);
     fprintf(stdout, "  %s\n", argv[i]);
   }
   return EXIT_SUCCESS;
