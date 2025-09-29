@@ -43,16 +43,33 @@ exit $?
   " -Wno-declaration-after-statement"                                          \
   " -Wno-padded"                                                               \
   " -Wno-poison-system-directories"                                            \
+  " -Wno-alloca"                                                               \
+  " -Wno-bad-function-cast"                                                    \
   " -Wno-cast-align"                                                           \
+  " -Wno-cast-function-type-strict"                                            \
   " -Wno-cast-qual"                                                            \
   " -Wno-comma"                                                                \
+  " -Wno-conditional-uninitialized"                                            \
+  " -Wno-covered-switch-default"                                               \
+  " -Wno-disabled-macro-expansion"                                             \
   " -Wno-documentation-unknown-command"                                        \
   " -Wno-documentation"                                                        \
   " -Wno-double-promotion"                                                     \
+  " -Wno-float-equal"                                                          \
+  " -Wno-format-nonliteral"                                                    \
+  " -Wno-format"                                                               \
   " -Wno-implicit-int-conversion"                                              \
+  " -Wno-missing-noreturn"                                                     \
+  " -Wno-missing-prototypes"                                                   \
   " -Wno-missing-variable-declarations"                                        \
+  " -Wno-shadow"                                                               \
   " -Wno-shorten-64-to-32"                                                     \
   " -Wno-sign-conversion"                                                      \
+  " -Wno-switch-default"                                                       \
+  " -Wno-switch-enum"                                                          \
+  " -Wno-undef"                                                                \
+  " -Wno-unreachable-code-break"                                               \
+  " -Wno-unused-macros"                                                        \
   " -std=c99"
 #define TARGET_MACOS
 #elif defined(RELEASE) && !defined(TARGET_WINDOWS)
