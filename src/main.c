@@ -97,14 +97,22 @@ static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
       printf("skipping non-digital file: %s\n", file->name);
       continue;
     }
-    printf("%d[%d]..%d[%d] (size: %" PRId64 ") %s (%s)\n", file->start_frame,
-           file->start_byte, file->end_frame, file->end_byte, file->size,
-           file->name, file->checksum);
+    printf("%d[%d]..%d[%d] (size: %" PRId64 ") %s (%s) [%s]\n",
+           file->start_frame, file->start_byte, file->end_frame, file->end_byte,
+           file->size, file->name, file->checksum, file->file_format);
 
     char output_file_path[4096];
     snprintf(output_file_path, sizeof output_file_path, "%s/%s", output_folder,
              file->name);
     ensurePathExists(output_file_path);
+
+    if (strncmp(file->file_format, "afs/directory", 13) == 0) {
+      // directory names always end with /, ensurePathExists already created
+      // this directory, or if not, this implementation creates the entire
+      // parent path of each file anyway.
+      continue;
+    }
+
     FILE *output_file = fopen(output_file_path, "w+b");
 
     if (!output_file) {
