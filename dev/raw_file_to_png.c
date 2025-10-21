@@ -295,7 +295,7 @@ int main(int argc, char *argv[]) {
 
   dcrc64 *crc = boxing_math_crc64_create_def();
 
-  enum JobKind job =
+  enum JobKind job_kind =
       (argc >= 4
            ? (strcmp(argv[argc - 1], "split") == 0      ? JOB_GENERATE_SINGLE
               : strcmp(argv[argc - 1], "read") == 0     ? JOB_GENERATE_READ
@@ -303,7 +303,7 @@ int main(int argc, char *argv[]) {
                                                         : JOB_GENERATE_PNG)
            : JOB_GENERATE_PNG);
   PendingFrameGenerationJobList job_list = {
-      .job = job,
+      .job = job_kind,
       .jobs = {.data = NULL, .size = 0},
       .count = 0,
       .offset = 0,
@@ -318,7 +318,7 @@ int main(int argc, char *argv[]) {
   };
 
   for (size_t in_file_idx = 1;
-       in_file_idx < (size_t)argc - (job == JOB_GENERATE_PNG ? 1 : 2);
+       in_file_idx < (size_t)argc - (job_kind == JOB_GENERATE_PNG ? 1 : 2);
        in_file_idx++) {
 #ifdef THREADED
 #ifdef _WIN32
@@ -350,7 +350,7 @@ int main(int argc, char *argv[]) {
 #endif
 #endif
 
-    const char *folder_path = argv[argc - (job == JOB_GENERATE_PNG ? 1 : 2)];
+    const char *folder_path = argv[argc - (job_kind == JOB_GENERATE_PNG ? 1 : 2)];
 
 #ifdef _WIN32
     mkdir(folder_path);
@@ -386,16 +386,16 @@ int main(int argc, char *argv[]) {
       const RawFileFooter *const footer = (const RawFileFooter *)(ptr + i);
       i += sizeof *footer;
 
-      if (job == JOB_GENERATE_READ || job == JOB_GENERATE_VALIDATE) {
+      if (job_kind == JOB_GENERATE_READ || job_kind == JOB_GENERATE_VALIDATE) {
 
         printHeader(header);
         fwrite(" ", 1, 1, stdout);
         printFooter(footer);
-        if (job != JOB_GENERATE_VALIDATE)
+        if (job_kind != JOB_GENERATE_VALIDATE)
           fwrite("\n", 1, 1, stdout);
       }
 
-      if (job == JOB_GENERATE_VALIDATE) {
+      if (job_kind == JOB_GENERATE_VALIDATE) {
         size_t frame_size = header->frame_width * header->frame_height;
         if (header->color_depth == 1)
           frame_size >>= 3;
@@ -424,7 +424,7 @@ int main(int argc, char *argv[]) {
             ;
         printf("\x1b[%dm %s= %016" PRIx64 "\x1b[0m\n", eq ? 92 : 91,
                eq ? "=" : "!", checksum);
-      } else if (job != JOB_GENERATE_READ) {
+      } else if (job_kind != JOB_GENERATE_READ) {
 
 #ifdef THREADED
 #ifdef _WIN32
@@ -449,7 +449,7 @@ int main(int argc, char *argv[]) {
             (FrameGenerationJob *)(job_list.jobs.data) + job_list.count++;
         snprintf(job->output_path, sizeof job->output_path,
                  "%s/%05" PRIu64 ".%s", folder_path, header->frame_id,
-                 job == JOB_GENERATE_PNG ? "png" : "raw");
+                 job_kind == JOB_GENERATE_PNG ? "png" : "raw");
         job->frame_id = header->frame_id;
         job->header_data = header;
         job->frame_data = data;
@@ -467,7 +467,7 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    if (job == JOB_GENERATE_VALIDATE) {
+    if (job_kind == JOB_GENERATE_VALIDATE) {
       if (i == reel.size) {
         printf("\x1b[92mFILE SIZE OK\x1b[0m\n");
       } else {
