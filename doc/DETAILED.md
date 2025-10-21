@@ -107,8 +107,6 @@ search paths, as well as the
 #include <assert.h>
 #define STB_IMAGE_IMPLEMENTATION
 #include "../dep/stb/stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../dep/stb/stb_image_write.h"
 static boxing_image8 LOAD_IMAGE_SOMEHOW(int frame_id) {
   char path[256];
   snprintf(path, sizeof path, "dep/ivm_testdata/reel/png/%06d.png", frame_id);
@@ -116,36 +114,11 @@ static boxing_image8 LOAD_IMAGE_SOMEHOW(int frame_id) {
   int width;
   int height;
   unsigned char *data = stbi_load(path, &width, &height, NULL, 1);
-  // Skip upscaling for the control frame, it's already parseable at 4k
-  if (frame_id == 1)
-    return (boxing_image8){
-      .width = width,
-      .height = height,
-      .is_owning_data = DFALSE,
-      .data = data,
-    };
-  unsigned char *scaled_data = malloc((width * 3) * (height * 3));
-  // TODO: optimize, this is a very slow upscaling algorithm
-  for (int y = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
-      scaled_data[(y * 3 + 0) * (width * 3) + (x * 3 + 0)] = data[y * width + x];
-      scaled_data[(y * 3 + 0) * (width * 3) + (x * 3 + 1)] = data[y * width + x];
-      scaled_data[(y * 3 + 0) * (width * 3) + (x * 3 + 2)] = data[y * width + x];
-      scaled_data[(y * 3 + 1) * (width * 3) + (x * 3 + 0)] = data[y * width + x];
-      scaled_data[(y * 3 + 1) * (width * 3) + (x * 3 + 1)] = data[y * width + x];
-      scaled_data[(y * 3 + 1) * (width * 3) + (x * 3 + 2)] = data[y * width + x];
-      scaled_data[(y * 3 + 2) * (width * 3) + (x * 3 + 0)] = data[y * width + x];
-      scaled_data[(y * 3 + 2) * (width * 3) + (x * 3 + 1)] = data[y * width + x];
-      scaled_data[(y * 3 + 2) * (width * 3) + (x * 3 + 2)] = data[y * width + x];
-    }
-  }
-  free(data);
-  // DEBUG(uncomment this to see results of upscaling): stbi_write_png("tmp.png", width * 3, height * 3, 1, scaled_data, width * 3);
   return (boxing_image8){
-    .width = width * 3,
-    .height = height * 3,
+    .width = width,
+    .height = height,
     .is_owning_data = DFALSE,
-    .data = scaled_data,
+    .data = data,
   };
 }
 int main(int argc, char *argv[]) {
@@ -174,6 +147,14 @@ value like so:
 boxing_unboxer_parameters parameters;
 boxing_unboxer_parameters_init(&parameters);
 parameters.format = config;
+```
+
+If you wish to use "raw mode", for example if you are decoding digital frame
+images that were not photographed / scanned from physical film, you should also
+set the `is_raw` parameter like so:
+
+```c
+parameters.is_raw = 1;
 ```
 
 Finally we will be able to construct an unboxer object:
@@ -331,12 +312,25 @@ printf(
 
 In order to actually decode the data frames containing table of contents and
 other files, we actually need to initialize a second unboxer using the
-configuration loaded from the control frame data:
+configuration loaded from the control frame data, so first we'll need to
+initialize parameters:
 
 ```c
 boxing_unboxer_parameters parameters;
 boxing_unboxer_parameters_init(&parameters);
 parameters.format = ctl->technical_metadata->afs_content_boxing_format->config;
+```
+
+Like before, if we want to decode digital frames, we should set `is_raw`:
+
+```c
+parameters.is_raw = 1;
+```
+
+And then we create a new unboxer, using our parameters initialized using the
+decoded boxing format from the control frame.
+
+```c
 boxing_unboxer *unboxer = boxing_unboxer_create(&parameters);
 ```
 
