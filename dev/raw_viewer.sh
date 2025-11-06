@@ -1,6 +1,6 @@
 set -e
 #sudo apt install libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev
-cc -o raw_viewer -O2\
+cc -o out/exe/raw_viewer -O2\
  -D_GLFW_X11\
  -DSUPPORT_TRACELOG_DEBUG\
  -DPLATFORM_DESKTOP\
@@ -31,4 +31,3 @@ cc -o raw_viewer -O2\
  dep/raylib/src/external/glfw/src/posix_module.c\
  dep/raylib/src/external/glfw/src/vulkan.c\
  -lm
-./raw_viewer ../../../../Documents/reel.raw
