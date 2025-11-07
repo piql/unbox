@@ -197,6 +197,28 @@ int main(int argc, char *argv[]) {
 #endif
   }
 
+  { // Set up raw viewer
+#ifdef _WIN32
+    SYSTEM_WITH_LOG("cd dep/raylib && cmake -Bbuild");
+#ifdef RELEASE
+    SYSTEM_WITH_LOG("cd dep/raylib && cmake --build build --config Release --target raylib -j");
+#define RAYLIB_LIB_PATH "dep/raylib/build/raylib/Release/raylib.lib"
+#else
+    SYSTEM_WITH_LOG("cd dep/raylib && cmake --build build --config Debug --target raylib -j");
+#define RAYLIB_LIB_PATH "dep/raylib/build/raylib/Debug/raylib.lib"
+#endif
+#else
+#ifdef RELEASE
+    SYSTEM_WITH_LOG(
+        "cd dep/raylib && cmake -DCMAKE_BUILD_TYPE=Release -Bbuild");
+#else
+    SYSTEM_WITH_LOG("cd dep/raylib && cmake -DCMAKE_BUILD_TYPE=Debug -Bbuild");
+#endif
+    SYSTEM_WITH_LOG("cd dep/raylib && cmake --build build --target raylib -j");
+#define RAYLIB_LIB_PATH "dep/raylib/build/raylib/libraylib.a"
+#endif
+  }
+
   { // Generate doc example program
     Slice doc = mapFile("doc/DETAILED.md");
     MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
@@ -214,7 +236,7 @@ int main(int argc, char *argv[]) {
 
   { // Perform builds
     int cc_status;
-    BUILD_STMT(CC, "", "", " dev/sha1.c", "out/exe/sha1", CFLAGS, "",
+    BUILD_STMT(CC, "", AFS_INCLUDES, " dev/sha1.c", "out/exe/sha1", CFLAGS, "",
                cc_status);
     BUILD_STMT(CC, DEFINES, INCLUDES " -Idep/unboxing/tests/testutils/src",
                SOURCES " dev/doc_example_program.c",
@@ -224,6 +246,9 @@ int main(int argc, char *argv[]) {
                "out/exe/raw_file_to_png", CFLAGS, UNBOXING_LFLAGS, cc_status);
     BUILD_STMT(CC, DEFINES, INCLUDES, SOURCES " src/main.c", "out/exe/unbox",
                CFLAGS, LFLAGS, cc_status);
+    BUILD_STMT(CC, "", " -Idep/raylib/src", " dev/raw_viewer.c",
+               "out/exe/raw_viewer", CFLAGS, " " RAYLIB_LIB_PATH LFLAGS,
+               cc_status);
   }
   return EXIT_SUCCESS;
 }

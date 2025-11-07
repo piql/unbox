@@ -6,11 +6,13 @@
 #include "raw_file.c"
 
 int main(int argc, char **argv) {
+  (void)printHeader;
+  (void)printFooter;
   int screenWidth = 800;
   int screenHeight = 600;
   uint32_t image_width = 4096;
   uint32_t image_height = 2160;
-  Slice image_data = {
+  Slice image = {
       .data = malloc(image_width * image_height),
       .size = image_width * image_height,
   };
@@ -37,13 +39,18 @@ int main(int argc, char **argv) {
       i += (header->frame_width * header->frame_height);
     else {
       fprintf(stderr, "Invalid color depth\n");
+      unmapFile(file);
+      free(positions.data);
+      free(image.data);
+      return EXIT_FAILURE;
     }
     i += sizeof(RawFileFooter);
   }
   SetTraceLogLevel(LOG_ERROR);
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
   char title[1024];
-  snprintf(title, sizeof title, "Raw Viewer%s%s", argc > 1 ? " - " : "", argc > 1 ? argv[1] : "");
+  snprintf(title, sizeof title, "Raw Viewer%s%s", argc > 1 ? " - " : "",
+           argc > 1 ? argv[1] : "");
   InitWindow(screenWidth, screenHeight, title);
   SetTargetFPS(60);
   Texture2D tex;
@@ -71,13 +78,19 @@ int main(int argc, char **argv) {
       const RawFileHeader *const header = (const RawFileHeader *)pos;
       const uint8_t *data = (const uint8_t *)(pos + sizeof *header);
       if (!splat_pixels(data, header->frame_width, header->frame_height,
-                        header->color_depth, &image_data)) {
+                        header->color_depth, &image)) {
         fprintf(stderr, "Failed to splat pixels\n");
+        UnloadTexture(tex);
+        CloseWindow();
+        unmapFile(file);
+        free(positions.data);
+        free(image.data);
+        return EXIT_FAILURE;
       }
       image_width = header->frame_width;
       image_height = header->frame_height;
       img = (Image){
-          .data = (void *)image_data.data,
+          .data = (void *)image.data,
           .format = PIXELFORMAT_UNCOMPRESSED_GRAYSCALE,
           .width = image_width,
           .height = image_height,
@@ -103,5 +116,8 @@ int main(int argc, char **argv) {
   }
   UnloadTexture(tex);
   CloseWindow();
+  unmapFile(file);
+  free(positions.data);
+  free(image.data);
   return EXIT_SUCCESS;
 }
