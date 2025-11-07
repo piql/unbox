@@ -63,6 +63,16 @@ int main(int argc, char **argv) {
   while (!WindowShouldClose()) {
     screenWidth = GetScreenWidth();
     screenHeight = GetScreenHeight();
+
+    int c = GetCharPressed();
+    while (c != '\0') {
+      if (c >= '0' && c <= '9' && search_idx < sizeof search - 1) {
+        search[search_idx++] = c;
+        search[search_idx] = '\0';
+      }
+      c = GetCharPressed();
+    }
+
     int k = GetKeyPressed();
     int position_change = 0;
     while (k != 0) {
@@ -74,7 +84,7 @@ int main(int argc, char **argv) {
         position_change++;
       else if (k == KEY_BACKSPACE)
         search[--search_idx] = '\0';
-      else if (k == KEY_ENTER) {
+      else if (k == KEY_ENTER && search_idx != 0) {
         errno = 0;
         size_t entered_pos = (size_t)strtoul(search, NULL, 10);
         if (!errno && entered_pos < positions.size &&
@@ -97,22 +107,14 @@ int main(int argc, char **argv) {
       position_change++;
 
     int clamped_change =
-        position_change < 0 ? current_position == 0 ? 0 : position_change
-        : position_change > 0
-            ? current_position >= positions.size - 1 ? 0 : position_change
-            : position_change;
+        position_change < 0   ? current_position == 0 ? 0 : position_change
+        : position_change > 0 ? current_position >= positions.size - 1
+                                    ? positions.size - 1
+                                    : position_change
+                              : position_change;
     if (clamped_change != 0) {
       current_position_changed = true;
       current_position += clamped_change;
-    }
-
-    int c = GetCharPressed();
-    while (c != '\0') {
-      if (c >= '0' && c <= '9' && search_idx < sizeof search - 1) {
-        search[search_idx++] = c;
-        search[search_idx] = '\0';
-      }
-      c = GetCharPressed();
     }
 
     Image img;
