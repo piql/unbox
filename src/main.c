@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #ifdef _WIN32
-#include <direct.h>
+#include "win32.h"
 #endif
 
 static bool writePathSegment(const char *const restrict input, Slice scratch,
@@ -37,11 +37,7 @@ static void ensurePathExists(const char *const restrict path) {
   unsigned cursor = 0;
   for (;;) {
     if (writePathSegment(path, sliceof(buf), &cursor)) {
-#ifdef _WIN32
-      _mkdir(buf);
-#else
       mkdir(buf, 0755);
-#endif
     } else
       break;
   }
@@ -73,10 +69,6 @@ static bool writeEntireFile(const char *const restrict file_path, Slice data) {
   fclose(f);
   return true;
 }
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
 
 static bool unboxAndOutputFiles(Reel *reel, Unboxer *unboxer,
                                 Slice toc_contents,
@@ -215,11 +207,7 @@ int main(int argc, char *argv[]) {
     char cachefile_path[4096];
     snprintf(cachefile_path, sizeof cachefile_path,
              "%s/control_frame_%" PRIx64 ".xml", output_folder, crc);
-#ifdef _WIN32
-    _mkdir(output_folder);
-#else
     mkdir(output_folder, 0755);
-#endif
     writeEntireFile(cachefile_path, control_frame_contents);
     afs_control_data *ctl = afs_control_data_create();
     if (afs_control_data_load_string(

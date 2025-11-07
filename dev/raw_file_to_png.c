@@ -3,8 +3,7 @@
 #include "../src/map_file.c"
 #include "../src/unboxing_log.c"
 #ifdef _WIN32
-#include <direct.h>
-#include <windows.h>
+#include "../src/win32.h"
 #define BYTE_ORDER 1234
 #define LITTLE_ENDIAN 1234
 #elif defined(__APPLE__)
@@ -35,7 +34,7 @@ static bool generateFrameRaw(const char *const restrict output_path,
                              const size_t data_size,
                              const RawFileFooter *const restrict footer_data) {
 #ifdef _WIN32
-  DWORD attr = GetFileAttributesA(output_path);
+  uint32_t attr = GetFileAttributesA(output_path);
   if (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY))
     return true;
 #else
@@ -71,7 +70,7 @@ static bool generateFramePng(const char *const restrict output_path,
                              const uint8_t color_depth,
                              Slice *const output_image) {
 #ifdef _WIN32
-  DWORD attr = GetFileAttributesA(output_path);
+  uint32_t attr = GetFileAttributesA(output_path);
   if (attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY))
     return true;
 #else
@@ -86,7 +85,8 @@ static bool generateFramePng(const char *const restrict output_path,
   if (!splat_pixels(data, width, height, color_depth, output_image))
     return false;
 
-  return stbi_write_png(output_path, width, height, 1, output_image->data, width) != 0;
+  return stbi_write_png(output_path, width, height, 1, output_image->data,
+                        width) != 0;
 }
 
 typedef struct {
@@ -113,7 +113,7 @@ typedef struct {
   bool done;
 #ifdef THREADED
 #ifdef _WIN32
-  HANDLE mutex;
+  void *mutex;
 #else
   pthread_mutex_t mutex;
 #endif
@@ -246,9 +246,9 @@ int main(int argc, char *argv[]) {
        in_file_idx++) {
 #ifdef THREADED
 #ifdef _WIN32
-    HANDLE threads[THREAD_COUNT];
+    void *threads[THREAD_COUNT];
     for (unsigned i = 0; i < THREAD_COUNT; i++) {
-      HANDLE thread = CreateThread(
+      void *thread = CreateThread(
           NULL, 0, (LPTHREAD_START_ROUTINE)frameGeneratorWorker, NULL, 0, NULL);
       if (thread == NULL) {
         fprintf(stderr, "Failed to create thread\n");
@@ -277,11 +277,7 @@ int main(int argc, char *argv[]) {
     const char *folder_path =
         argv[argc - (job_kind == JOB_GENERATE_PNG ? 1 : 2)];
 
-#ifdef _WIN32
-    mkdir(folder_path);
-#else
     mkdir(folder_path, 0755);
-#endif
 
     const char *input_file = argv[in_file_idx];
 

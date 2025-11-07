@@ -38,6 +38,7 @@ exit $?
   " /wd4242"                                                                   \
   " /wd4244"                                                                   \
   " /wd4245"                                                                   \
+  " /wd4267"                                                                   \
   " /wd4456"                                                                   \
   " /wd4701"                                                                   \
   " /wd4703"
@@ -144,8 +145,8 @@ exit $?
 
 #ifdef _WIN32
 #define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
-  SYSTEM_WITH_LOG(cc defines includes sources lflags cflags                    \
-                  " /link /out:" output)
+  SYSTEM_WITH_LOG(cc defines includes sources cflags " /link" lflags           \
+                                                     " /out:" output)
 #else
 #define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
   SYSTEM_WITH_LOG(cc defines includes sources lflags cflags " -o " output)
@@ -201,12 +202,18 @@ int main(int argc, char *argv[]) {
 #ifdef _WIN32
     SYSTEM_WITH_LOG("cd dep/raylib && cmake -Bbuild");
 #ifdef RELEASE
-    SYSTEM_WITH_LOG("cd dep/raylib && cmake --build build --config Release --target raylib -j");
+    SYSTEM_WITH_LOG("cd dep/raylib && cmake --build build --config Release "
+                    "--target raylib -j");
 #define RAYLIB_LIB_PATH "dep/raylib/build/raylib/Release/raylib.lib"
 #else
-    SYSTEM_WITH_LOG("cd dep/raylib && cmake --build build --config Debug --target raylib -j");
+    SYSTEM_WITH_LOG("cd dep/raylib && cmake --build build --config Debug "
+                    "--target raylib -j");
 #define RAYLIB_LIB_PATH "dep/raylib/build/raylib/Debug/raylib.lib"
 #endif
+#define RAW_VIEWER_SOURCES                                                     \
+  " gdi32.lib msvcrtd.lib " RAYLIB_LIB_PATH                                    \
+  " winmm.lib user32.lib shell32.lib dev/raw_viewer.c"
+#define RAW_VIEWER_LFLAGS " /NODEFAULTLIB:LIBCMT"
 #else
 #ifdef RELEASE
     SYSTEM_WITH_LOG(
@@ -216,6 +223,8 @@ int main(int argc, char *argv[]) {
 #endif
     SYSTEM_WITH_LOG("cd dep/raylib && cmake --build build --target raylib -j");
 #define RAYLIB_LIB_PATH "dep/raylib/build/raylib/libraylib.a"
+#define RAW_VIEWER_SOURCES " dev/raw_viewer.c " RAYLIB_LIB_PATH
+#define RAW_VIEWER_LFLAGS " -lm"
 #endif
   }
 
@@ -246,9 +255,8 @@ int main(int argc, char *argv[]) {
                "out/exe/raw_file_to_png", CFLAGS, UNBOXING_LFLAGS, cc_status);
     BUILD_STMT(CC, DEFINES, INCLUDES, SOURCES " src/main.c", "out/exe/unbox",
                CFLAGS, LFLAGS, cc_status);
-    BUILD_STMT(CC, "", " -Idep/raylib/src", " dev/raw_viewer.c",
-               "out/exe/raw_viewer", CFLAGS, " " RAYLIB_LIB_PATH LFLAGS,
-               cc_status);
+    BUILD_STMT(CC, "", " -Idep/raylib/src", RAW_VIEWER_SOURCES,
+               "out/exe/raw_viewer", CFLAGS, RAW_VIEWER_LFLAGS, cc_status);
   }
   return EXIT_SUCCESS;
 }

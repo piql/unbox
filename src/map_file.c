@@ -4,11 +4,11 @@ static Slice mapFile(const char *const restrict path);
 static void unmapFile(Slice file);
 
 #ifdef _WIN32
-#include <windows.h>
+#include "win32.h"
 
 static Slice mapFile(const char *const restrict path) {
-  HANDLE file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL,
-                            OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  void *file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL,
+                           OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
   if (file == INVALID_HANDLE_VALUE)
     return Slice_empty;
   LARGE_INTEGER size;
@@ -16,12 +16,13 @@ static Slice mapFile(const char *const restrict path) {
     CloseHandle(file);
     return Slice_empty;
   }
-  HANDLE map = CreateFileMappingA(file, NULL, PAGE_READONLY, 0, 0, NULL);
+  void *map = CreateFileMappingA(file, NULL, PAGE_READONLY, 0, 0, NULL);
   CloseHandle(file);
   if (map == NULL) {
     return Slice_empty;
   }
-  void *data = MapViewOfFile(map, FILE_MAP_READ, 0, 0, (size_t)size.QuadPart);
+  void *data =
+      MapViewOfFileFromApp(map, FILE_MAP_READ, 0, (size_t)size.QuadPart);
   CloseHandle(map);
   return data == NULL ? Slice_empty
                       : (Slice){.data = data, .size = (size_t)size.QuadPart};

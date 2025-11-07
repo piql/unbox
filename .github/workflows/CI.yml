@@ -19,7 +19,7 @@ jobs:
             doctest_command: ./out/exe/doc_example_program
             artifact_name: unbox-debug-arm64-macos
           - os: windows-2025
-            build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo && cl.exe /nologo build.c && mt.exe -nologo -manifest dev/build/UTF8.manifest -outputresource:build.exe;#1 && build.exe"
+            build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo -arch=x64 -host_arch=x64 && cl.exe /nologo build.c && mt.exe -nologo -manifest dev/build/UTF8.manifest -outputresource:build.exe;#1 && build.exe"
             run_command: out/exe/unbox.exe dep/ivm_testdata/reel/png out/data
             doctest_command: out/exe/doc_example_program.exe
             artifact_name: unbox-debug-x86_64-win32

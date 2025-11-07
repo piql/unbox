@@ -4,14 +4,14 @@
 #include <string.h>
 
 #ifdef _WIN32
-#include <windows.h>
+#include "win32.h"
 #else
 #include <dirent.h>
 #endif
 
 typedef struct {
 #ifdef _WIN32
-  HANDLE handle;
+  void *handle;
   WIN32_FIND_DATAA file_data;
 #else
   DIR *dir;
@@ -29,7 +29,7 @@ static bool dir_start(const char *const path, DirIterator *const out) {
   if (result < 0 || (unsigned)result > sizeof buf)
     return false;
   WIN32_FIND_DATAA file_data;
-  HANDLE h = FindFirstFileA(buf, &file_data);
+  void *h = FindFirstFileA(buf, &file_data);
   if (h == INVALID_HANDLE_VALUE)
     return false;
   *out = (DirIterator){.handle = h, .file_data = file_data};
@@ -52,7 +52,7 @@ static bool dir_next(DirIterator *const it, DirEntry *const out) {
     return false;
   memcpy(out->name, &it->file_data.cFileName, name_len);
   out->name[name_len] = '\0';
-  if (!FindNextFile(it->handle, &it->file_data)) {
+  if (!FindNextFileA(it->handle, &it->file_data)) {
     FindClose(it->handle);
     it->handle = INVALID_HANDLE_VALUE;
   }

@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
            argc > 1 ? argv[1] : "");
   InitWindow(screenWidth, screenHeight, title);
   SetTargetFPS(60);
-  Texture2D tex;
+  Texture2D tex = {0};
   bool current_position_changed = true;
   while (!WindowShouldClose()) {
     screenWidth = GetScreenWidth();

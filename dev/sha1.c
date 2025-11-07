@@ -12,7 +12,7 @@ int main(int argc, char *argv[]) {
     unsigned char buf[64];
     for (;;) {
       size_t bytes_read = fread(buf, 1, 64, stdin);
-      r = afs_sha1_process(&h, buf, bytes_read);
+      r = afs_sha1_process(&h, buf, (unsigned long)bytes_read);
       assert(r == CRYPT_OK);
       if (bytes_read < 64) {
         int err;
@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
       fprintf(stderr, "Failed to read file: %s\n", argv[i]);
       return EXIT_FAILURE;
     }
-    r = afs_sha1_process(&h, file.data, file.size);
+    r = afs_sha1_process(&h, file.data, (unsigned long)file.size);
     assert(r == CRYPT_OK);
     unmapFile(file);
     r = afs_sha1_done(&h, digest);
