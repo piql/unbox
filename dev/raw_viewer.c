@@ -59,45 +59,62 @@ int main(int argc, char **argv) {
   SetTargetFPS(60);
   Texture2D tex = {0};
   bool current_position_changed = true;
+  bool user_quit = false;
   while (!WindowShouldClose()) {
     screenWidth = GetScreenWidth();
     screenHeight = GetScreenHeight();
-    if ((IsKeyPressed(KEY_Q) || IsKeyPressedRepeat(KEY_Q)))
+    int k = GetKeyPressed();
+    int position_change = 0;
+    while (k != 0) {
+      if (k == KEY_Q)
+        user_quit = true;
+      else if (k == KEY_LEFT)
+        position_change--;
+      else if (k == KEY_RIGHT)
+        position_change++;
+      else if (k == KEY_BACKSPACE)
+        search[--search_idx] = '\0';
+      else if (k == KEY_ENTER) {
+        errno = 0;
+        size_t entered_pos = (size_t)strtoul(search, NULL, 10);
+        if (!errno && entered_pos < positions.size &&
+            entered_pos != current_position) {
+          current_position = entered_pos;
+          current_position_changed = true;
+        }
+        search_idx = 0;
+        search[search_idx] = '\0';
+      } else if (k == KEY_SPACE || k == KEY_H)
+        show_text = !show_text;
+      k = GetKeyPressed();
+    }
+    if (user_quit)
       break;
-    if ((IsKeyPressed(KEY_LEFT) || IsKeyPressedRepeat(KEY_LEFT)) &&
-        current_position > 0) {
-      current_position -= 1;
+
+    if (IsKeyPressedRepeat(KEY_LEFT))
+      position_change--;
+    if (IsKeyPressedRepeat(KEY_RIGHT))
+      position_change++;
+
+    int clamped_change =
+        position_change < 0 ? current_position == 0 ? 0 : position_change
+        : position_change > 0
+            ? current_position >= positions.size - 1 ? 0 : position_change
+            : position_change;
+    if (clamped_change != 0) {
       current_position_changed = true;
+      current_position += clamped_change;
     }
-    if ((IsKeyPressed(KEY_RIGHT) || IsKeyPressedRepeat(KEY_RIGHT)) &&
-        current_position < positions.size - 1) {
-      current_position += 1;
-      current_position_changed = true;
-    }
+
     int c = GetCharPressed();
-    while (c != '\0' && search_idx < sizeof search - 1) {
-      search[search_idx++] = c;
-      search[search_idx] = '\0';
+    while (c != '\0') {
+      if (c >= '0' && c <= '9' && search_idx < sizeof search - 1) {
+        search[search_idx++] = c;
+        search[search_idx] = '\0';
+      }
       c = GetCharPressed();
     }
-    if (IsKeyPressed(KEY_BACKSPACE) && search_idx != 0) {
-      search[--search_idx] = '\0';
-    }
-    if ((IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) &&
-        search_idx != 0) {
-      errno = 0;
-      size_t entered_pos = (size_t)strtoul(search, NULL, 10);
-      if (!errno && entered_pos < positions.size &&
-          entered_pos != current_position) {
-        current_position = entered_pos;
-        current_position_changed = true;
-      }
-      search_idx = 0;
-      search[search_idx] = '\0';
-    }
-    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_H)) {
-      show_text = !show_text;
-    }
+
     Image img;
 
     if (current_position_changed && positions.data) {
