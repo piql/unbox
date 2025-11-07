@@ -1,4 +1,5 @@
 #include "../dep/raylib/src/raylib.h"
+#include <errno.h>
 #include <stdlib.h>
 
 #include "../src/grow.c"
@@ -49,6 +50,9 @@ int main(int argc, char **argv) {
   SetTraceLogLevel(LOG_ERROR);
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
   char title[1024];
+  bool show_text = true;
+  char search[32] = {0};
+  size_t search_idx = 0;
   snprintf(title, sizeof title, "Raw Viewer%s%s", argc > 1 ? " - " : "",
            argc > 1 ? argv[1] : "");
   InitWindow(screenWidth, screenHeight, title);
@@ -69,6 +73,36 @@ int main(int argc, char **argv) {
         current_position < positions.size - 1) {
       current_position += 1;
       current_position_changed = true;
+    }
+    for (int n = KEY_ZERO; n <= KEY_NINE; n++) {
+      if (IsKeyPressed(n) && search_idx < sizeof search - 1) {
+        search[search_idx++] = '0' + (n - KEY_ZERO);
+        search[search_idx] = '\0';
+      }
+    }
+    for (int n = KEY_KP_0; n <= KEY_KP_9; n++) {
+      if (IsKeyPressed(n) && search_idx < sizeof search - 1) {
+        search[search_idx++] = '0' + (n - KEY_KP_0);
+        search[search_idx] = '\0';
+      }
+    }
+    if (IsKeyPressed(KEY_BACKSPACE) && search_idx != 0) {
+      search[--search_idx] = '\0';
+    }
+    if ((IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) &&
+        search_idx != 0) {
+      errno = 0;
+      size_t entered_pos = (size_t)strtoul(search, NULL, 10);
+      if (!errno && entered_pos < positions.size &&
+          entered_pos != current_position) {
+        current_position = entered_pos;
+        current_position_changed = true;
+      }
+      search_idx = 0;
+      search[search_idx] = '\0';
+    }
+    if (IsKeyPressed(KEY_SPACE) || IsKeyPressed(KEY_H)) {
+      show_text = !show_text;
     }
     Image img;
 
@@ -111,6 +145,15 @@ int main(int argc, char **argv) {
           .y = (screenHeight - tex.height * tex_scale) / 2,
       };
       DrawTextureEx(tex, offset, 0, tex_scale, WHITE);
+      if (show_text) {
+        if (search[0] != '\0') {
+          DrawText(search, 0, 0, 64, BLACK);
+        } else {
+          char pos[32];
+          snprintf(pos, sizeof pos, "%zu\n", current_position);
+          DrawText(pos, 0, 0, 64, GRAY);
+        }
+      }
     }
     EndDrawing();
   }
