@@ -74,17 +74,11 @@ int main(int argc, char **argv) {
       current_position += 1;
       current_position_changed = true;
     }
-    for (int n = KEY_ZERO; n <= KEY_NINE; n++) {
-      if (IsKeyPressed(n) && search_idx < sizeof search - 1) {
-        search[search_idx++] = '0' + (n - KEY_ZERO);
-        search[search_idx] = '\0';
-      }
-    }
-    for (int n = KEY_KP_0; n <= KEY_KP_9; n++) {
-      if (IsKeyPressed(n) && search_idx < sizeof search - 1) {
-        search[search_idx++] = '0' + (n - KEY_KP_0);
-        search[search_idx] = '\0';
-      }
+    int c = GetCharPressed();
+    while (c != '\0' && search_idx < sizeof search - 1) {
+      search[search_idx++] = c;
+      search[search_idx] = '\0';
+      c = GetCharPressed();
     }
     if (IsKeyPressed(KEY_BACKSPACE) && search_idx != 0) {
       search[--search_idx] = '\0';
