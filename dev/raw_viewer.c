@@ -58,7 +58,6 @@ int main(int argc, char **argv) {
   InitWindow(screenWidth, screenHeight, title);
   SetTargetFPS(60);
   Texture2D tex = {0};
-  bool current_position_changed = true;
   bool user_quit = false;
   while (!WindowShouldClose()) {
     screenWidth = GetScreenWidth();
@@ -74,23 +73,22 @@ int main(int argc, char **argv) {
     }
 
     int k = GetKeyPressed();
-    int position_change = 0;
+    size_t next_position = current_position;
     while (k != 0) {
       if (k == KEY_Q)
         user_quit = true;
-      else if (k == KEY_LEFT)
-        position_change--;
-      else if (k == KEY_RIGHT)
-        position_change++;
+      else if (k == KEY_LEFT && next_position > 0)
+        next_position--;
+      else if (k == KEY_RIGHT && next_position + 1 < positions.size)
+        next_position++;
       else if (k == KEY_BACKSPACE)
         search[--search_idx] = '\0';
       else if (k == KEY_ENTER && search_idx != 0) {
         errno = 0;
         size_t entered_pos = (size_t)strtoul(search, NULL, 10);
-        if (!errno && entered_pos < positions.size &&
-            entered_pos != current_position) {
-          current_position = entered_pos;
-          current_position_changed = true;
+        if (!errno) {
+          next_position =
+              min(entered_pos, positions.size ? positions.size - 1 : 0);
         }
         search_idx = 0;
         search[search_idx] = '\0';
@@ -101,26 +99,15 @@ int main(int argc, char **argv) {
     if (user_quit)
       break;
 
-    if (IsKeyPressedRepeat(KEY_LEFT))
-      position_change--;
-    if (IsKeyPressedRepeat(KEY_RIGHT))
-      position_change++;
-
-    int clamped_change =
-        position_change < 0   ? current_position == 0 ? 0 : position_change
-        : position_change > 0 ? current_position >= positions.size - 1
-                                    ? positions.size - 1
-                                    : position_change
-                              : position_change;
-    if (clamped_change != 0) {
-      current_position_changed = true;
-      current_position += clamped_change;
-    }
+    if (IsKeyPressedRepeat(KEY_LEFT) && next_position > 0)
+      next_position--;
+    if (IsKeyPressedRepeat(KEY_RIGHT) && next_position + 1 < positions.size)
+      next_position++;
 
     Image img;
 
-    if (current_position_changed && positions.data) {
-      current_position_changed = false;
+    if (current_position != next_position && positions.data) {
+      current_position = next_position;
       size_t pos = ((size_t *)positions.data)[current_position];
       const RawFileHeader *const header = (const RawFileHeader *)pos;
       const uint8_t *data = (const uint8_t *)(pos + sizeof *header);
