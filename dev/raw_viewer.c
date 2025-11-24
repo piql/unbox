@@ -51,12 +51,29 @@ int main(int argc, char **argv) {
   SetConfigFlags(FLAG_WINDOW_RESIZABLE);
   char title[1024];
   bool show_text = true;
+  bool invert = false;
   char search[32] = {0};
   size_t search_idx = 0;
   snprintf(title, sizeof title, "Raw Viewer%s%s", argc > 1 ? " - " : "",
            argc > 1 ? argv[1] : "");
   InitWindow(screenWidth, screenHeight, title);
   SetTargetFPS(60);
+
+  const char *const invertFragmentShader =
+      "#version 330\n"
+      "in vec2 fragTexCoord;\n"
+      "out vec4 fragColor;\n"
+      "uniform sampler2D texture0;\n"
+      "void main() {\n"
+      "  vec4 color = texture(texture0, fragTexCoord);\n"
+      "  fragColor = vec4(1.0 - color.rgb, 1.0);\n"
+      "}\n";
+
+  Shader invertShader = LoadShaderFromMemory(NULL, invertFragmentShader);
+  if (!IsShaderValid(invertShader)) {
+    fprintf(stderr, "Failed to load shader\n");
+    return EXIT_FAILURE;
+  }
   Texture2D tex = {0};
   bool user_quit = false;
   while (!WindowShouldClose()) {
@@ -94,6 +111,8 @@ int main(int argc, char **argv) {
         search[search_idx] = '\0';
       } else if (k == KEY_SPACE || k == KEY_H)
         show_text = !show_text;
+      else if (k == KEY_I)
+        invert = !invert;
       k = GetKeyPressed();
     }
     if (user_quit)
@@ -144,7 +163,11 @@ int main(int argc, char **argv) {
           .x = (screenWidth - tex.width * tex_scale) / 2,
           .y = (screenHeight - tex.height * tex_scale) / 2,
       };
+      if (invert)
+        BeginShaderMode(invertShader);
       DrawTextureEx(tex, offset, 0, tex_scale, WHITE);
+      if (invert)
+        EndShaderMode();
       if (show_text) {
         if (search[0] != '\0') {
           DrawText(search, 0, 0, 64, BLACK);
