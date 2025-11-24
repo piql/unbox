@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
   SetTargetFPS(60);
 
   const char *const invertFragmentShader =
-      "#version 330\n"
+      "#version 330 core\n"
       "in vec2 fragTexCoord;\n"
       "out vec4 fragColor;\n"
       "uniform sampler2D texture0;\n"
