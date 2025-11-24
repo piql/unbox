@@ -11,6 +11,9 @@ int main(int argc, char **argv) {
   (void)printFooter;
   int screenWidth = 800;
   int screenHeight = 600;
+  int non_fullscreen_width = screenWidth;
+  int non_fullscreen_height = screenHeight;
+  Vector2 non_fullscreen_position;
   uint32_t image_width = 4096;
   uint32_t image_height = 2160;
   Slice image = {
@@ -79,6 +82,11 @@ int main(int argc, char **argv) {
   while (!WindowShouldClose()) {
     screenWidth = GetScreenWidth();
     screenHeight = GetScreenHeight();
+    if (!IsWindowFullscreen()) {
+      non_fullscreen_width = screenWidth;
+      non_fullscreen_height = screenHeight;
+      non_fullscreen_position = GetWindowPosition();
+    }
 
     int c = GetCharPressed();
     while (c != '\0') {
@@ -113,6 +121,22 @@ int main(int argc, char **argv) {
         show_text = !show_text;
       else if (k == KEY_I)
         invert = !invert;
+      else if (k == KEY_F || k == KEY_F11) {
+        if (!IsWindowFullscreen()) {
+          // Going into fullscreen, set appropriate resolution
+          int monitor = GetCurrentMonitor();
+          int monitor_width = GetMonitorWidth(monitor);
+          int monitor_height = GetMonitorHeight(monitor);
+          SetWindowSize(monitor_width, monitor_height);
+          ToggleFullscreen();
+        } else {
+          ToggleFullscreen();
+          SetWindowSize(non_fullscreen_width, non_fullscreen_height);
+          SetWindowPosition(non_fullscreen_position.x, non_fullscreen_position.y);
+        }
+        screenWidth = GetScreenWidth();
+        screenHeight = GetScreenHeight();
+      }
       k = GetKeyPressed();
     }
     if (user_quit)
