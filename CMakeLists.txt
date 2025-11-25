@@ -18,9 +18,11 @@ elseif(WIN32)
     set(CFLAGS
         /Wall
         /WX
+        /wd4061 # -Wno-switch
         /wd4464 # relative include path contains '..'
         /wd4668 # -Wno-undef
         /wd4820 # -Wno-padded
+        /wd5045 #  Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
     )
     set(LFLAGS)
 endif()
@@ -35,6 +37,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
             -Weverything
             -Wno-declaration-after-statement
             -Wno-padded
+            -Wno-poison-system-directories
         )
         list(APPEND LFLAGS -fsanitize=undefined)
     endif()

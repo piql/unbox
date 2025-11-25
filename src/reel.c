@@ -46,7 +46,7 @@ Reel_init(Reel *reel,
         dir_end(&it);
         return false;
       }
-      uint32_t str_start = reel->string_pool_used + 1;
+      uint32_t str_start = (uint32_t)(reel->string_pool_used + 1);
       memcpy((char *)reel->string_pool.data + reel->string_pool_used, ent.name,
              name_len + 1);
       reel->string_pool_used += name_len + 1;

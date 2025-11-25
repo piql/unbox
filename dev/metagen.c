@@ -18,10 +18,11 @@ int main(void) {
 #undef X
   };
   char cwd[4096];
+  memset(cwd, 0, sizeof cwd);
 #ifdef _WIN32
   GetCurrentDirectoryA(sizeof cwd, cwd);
 #else
-  getcwd(cwd, sizeof cwd);
+  (void)getcwd(cwd, sizeof cwd);
 #endif
   size_t cwd_len = strlen(cwd);
   cwd[cwd_len++] = '/';
@@ -31,6 +32,7 @@ int main(void) {
       includes[i] = includes[i] + cwd_len;
     }
   }
+  mkdir(".vscode", 0755);
   writeVSCodeInfo(includes, countof(includes), NULL, 0);
   return !markdownToC("doc/DETAILED.md", "dev/doc_example_program.c");
 }

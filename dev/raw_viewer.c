@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
   int screenHeight = 600;
   int non_fullscreen_width = screenWidth;
   int non_fullscreen_height = screenHeight;
-  Vector2 non_fullscreen_position;
+  Vector2 non_fullscreen_position = {0, 0};
   uint32_t image_width = 4096;
   uint32_t image_height = 2160;
   Slice image = {

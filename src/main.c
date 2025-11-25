@@ -23,7 +23,7 @@ static bool writePathSegment(const char *const restrict input, Slice scratch,
   size_t j;
   for (j = *cursor; j < input_len && j < scratch.size; j++) {
     if (input[j] == '/') {
-      *cursor = j + 1;
+      *cursor = (unsigned)j + 1;
       return true;
     }
     ((char *)scratch.data)[j] = input[j];
