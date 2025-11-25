@@ -89,7 +89,10 @@ exit $?
 #elif defined(RELEASE) && !defined(TARGET_WINDOWS)
 #define CC "gcc"
 #define CC_DEFINES ""
-#define CFLAGS " -O3 -s"
+#define CFLAGS                                                                 \
+  " -O3 -s -Wall -Wextra -Wpedantic -Werror -std=c99"                          \
+  " -Wno-maybe-uninitialized"                                                  \
+  " -Wno-use-after-free"
 #elif defined(TARGET_MACOS)
 #define CC "zig cc"
 #define CC_DEFINES ""
