@@ -250,7 +250,7 @@ int main(int argc, char *argv[]) {
     int cc_status;
     BUILD_STMT(CC, "", AFS_INCLUDES, " dev/sha1.c", "out/exe/sha1", CFLAGS, "",
                cc_status);
-    BUILD_STMT(CC, DEFINES, INCLUDES " -Idep/unboxing/tests/testutils/src",
+    BUILD_STMT(CC, DEFINES, INCLUDES " -Idep/afs/unboxing/tests/testutils/src",
                SOURCES " dev/doc_example_program.c",
                "out/exe/doc_example_program", CFLAGS, LFLAGS, cc_status);
     BUILD_STMT(CC, DEFINES, UNBOXING_INCLUDES,

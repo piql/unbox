@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 
-#include "../dep/unboxing/tests/testutils/src/config_source_4k_controlframe_v7.h"
+#include "../dep/afs/unboxing/tests/testutils/src/config_source_4k_controlframe_v7.h"
 #include "grow.c"
 #include "iterate_dir.c"
 #include "load_image.c"
