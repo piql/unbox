@@ -202,7 +202,7 @@ int main(int argc, char *argv[]) {
     printf("%.*s\n", (int)control_frame_contents.size,
            (char *)control_frame_contents.data);
     uint64_t crc = boxing_math_crc64_calc_crc(
-        dcrc64, control_frame_contents.data, control_frame_contents.size);
+        dcrc64, control_frame_contents.data, (unsigned)control_frame_contents.size);
     boxing_math_crc64_reset(dcrc64, POLY_CRC_64);
     char cachefile_path[4096];
     snprintf(cachefile_path, sizeof cachefile_path,

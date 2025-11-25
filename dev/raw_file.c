@@ -21,7 +21,7 @@ static void printHeader(const RawFileHeader *const h) {
                      " %" PRIu8 "bpp %" PRIu8 "cpc",
                      h->frame_id, h->version, h->frame_width, h->frame_height,
                      h->color_depth, h->colors_per_channel);
-  fwrite(buf, 1, len, stdout);
+  fwrite(buf, 1, (size_t)len, stdout);
 }
 
 typedef struct {
@@ -42,7 +42,7 @@ static void printFooter(const RawFileFooter *const f) {
   char buf[256];
   int len = snprintf(buf, sizeof buf, "Footer ");
   len += writeCRC64(f->crc, buf + len);
-  fwrite(buf, 1, len, stdout);
+  fwrite(buf, 1, (size_t)len, stdout);
 }
 
 static bool splat_pixels(const uint8_t *const restrict data,

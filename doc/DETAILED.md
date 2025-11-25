@@ -47,6 +47,23 @@ void boxing_log_args(const int log_level, const char *const restrict fmt, ...) {
 }
 ```
 
+## afs prerequisite headers
+
+We'll need these headers for the section
+[Parsing the control frame and unboxing the Table of Contents](#parsing-the-control-frame-and-unboxing-the-table-of-contents):
+
+```c
+#include <string.h>
+#include <controldata.h>
+```
+
+And for the section
+[Parsing the Table of Contents and decoding the rest of the files on the film](#parsing-the-table-of-contents-and-decoding-the-rest-of-the-files-on-the-film):
+
+```c
+#include <tocdata_c.h>
+```
+
 ## Preliminary information about data types
 
 These are the major datatypes you need to know about to initialize the library
@@ -260,12 +277,8 @@ There are many ways to parse the control frame data. Piql provides a "built-in"
 and self-contained way which is printed in the representation information within
 the reel along with the unboxing source code. This is the `afs` library.
 
-First we'll need to add some more includes to our project:
-
-```c
-#include <string.h>
-#include <controldata.h>
-```
+Make sure you have included
+[all the headers you need](#afs-prerequisite-headers).
 
 In order to parse the control frame data using `afs`, we will want to initialize
 an `afs_control_data` object and load the XML string into it. We'll have to
@@ -385,12 +398,8 @@ printf("Table of Contents (%zu): %.*s\n", table_of_contents_size, (int)table_of_
 
 ## Parsing the Table of Contents and decoding the rest of the files on the film
 
-For this example we will continue using the `afs` library, so we'll need another
-include directive:
-
-```c
-#include <tocdata_c.h>
-```
+For this example we will continue using the `afs` library. Make sure you have
+included [all the headers you need](#afs-prerequisite-headers).
 
 Parsing the table of contents is very similar to parsing the control frame data:
 

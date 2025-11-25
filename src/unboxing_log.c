@@ -12,6 +12,12 @@ enum BoxingLogLevel {
   BoxingLogLevelAlways = 4,
 };
 
+void boxing_log(const enum BoxingLogLevel level,
+                const char *const restrict str);
+
+void boxing_log_args(const enum BoxingLogLevel level,
+                     const char *const restrict fmt, ...);
+
 static const char *boxing_log_level_str[] = {
     "\x1b[36mINFO\x1b[0m   ", "\x1b[33mWARNING\x1b[0m",
     "\x1b[31mERROR\x1b[0m  ", "\x1b[31mFATAL\x1b[0m  ",

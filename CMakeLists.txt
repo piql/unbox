@@ -19,6 +19,7 @@ elseif(WIN32)
         /Wall
         /WX
         /wd4061 # -Wno-switch
+        /wd4456 # -Wno-shadow
         /wd4464 # relative include path contains '..'
         /wd4668 # -Wno-undef
         /wd4820 # -Wno-padded
@@ -35,9 +36,35 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         list(APPEND CFLAGS
             -fsanitize=undefined
             -Weverything
+            -Wno-alloca
+            -Wno-bad-function-cast
+            -Wno-cast-align
+            -Wno-cast-function-type-strict
+            -Wno-cast-qual
+            -Wno-comma
+            -Wno-conditional-uninitialized
+            -Wno-covered-switch-default
             -Wno-declaration-after-statement
-            -Wno-padded
-            -Wno-poison-system-directories
+            -Wno-disabled-macro-expansion
+            -Wno-documentation
+            -Wno-documentation-unknown-command
+            -Wno-double-promotion
+            -Wno-float-equal
+            -Wno-format
+            -Wno-format-nonliteral
+            -Wno-implicit-int-conversion
+            -Wno-missing-noreturn
+            -Wno-missing-prototypes
+            -Wno-missing-variable-declarations
+            -Wno-padded -Wno-poison-system-directories
+            -Wno-shadow
+            -Wno-shorten-64-to-32
+            -Wno-sign-conversion
+            -Wno-switch-default
+            -Wno-switch-enum
+            -Wno-undef
+            -Wno-unreachable-code-break
+            -Wno-unused-macros
         )
         list(APPEND LFLAGS -fsanitize=undefined)
     endif()
