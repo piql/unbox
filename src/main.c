@@ -55,7 +55,7 @@ static void printReelInformation(afs_administrative_metadata *md) {
 }
 
 static bool writeEntireFile(const char *const restrict file_path, Slice data) {
-  FILE *f = fopen(file_path, "w");
+  FILE *f = fopen(file_path, "wb");
   size_t total_written = 0;
   while (total_written < data.size) {
     size_t written = fwrite((const char *)data.data + total_written, 1,
@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
     char cachefile_path[4096];
     snprintf(cachefile_path, sizeof cachefile_path,
              "%s/control_frame_%" PRIx64 ".xml", output_folder, crc);
-    ensurePathExists(output_folder);
+    ensurePathExists(cachefile_path);
     writeEntireFile(cachefile_path, control_frame_contents);
     afs_control_data *ctl = afs_control_data_create();
     if (afs_control_data_load_string(

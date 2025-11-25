@@ -86,7 +86,8 @@ static void *image_realloc_sized(void *const p, const size_t old_size,
                        new_size, NULL);
     return NULL;
   }
-  memcpy(moved, p, old_size);
+  if (p)
+    memcpy(moved, p, old_size);
   print_used();
   image_debug_printf("image_realloc_sized(%p, %zu, %zu): %p\n", p, old_size,
                      new_size, moved);
