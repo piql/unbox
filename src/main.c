@@ -217,7 +217,7 @@ int main(int argc, char *argv[]) {
       if (UnboxerCreate(
               ctl->technical_metadata->afs_content_boxing_format->config,
               use_raw_decoding, &unboxer) == UnboxerInitOK) {
-        Slice toc_contents;
+        Slice toc_contents = Slice_empty;
         bool toc_contents_cached = false;
         snprintf(cachefile_path, sizeof cachefile_path,
                  "%s/toc_%" PRIx64 ".xml", output_folder, crc);

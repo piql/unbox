@@ -22,7 +22,8 @@ int main(void) {
 #ifdef _WIN32
   GetCurrentDirectoryA(sizeof cwd, cwd);
 #else
-  (void)getcwd(cwd, sizeof cwd);
+  char *r = getcwd(cwd, sizeof cwd);
+  (void)r;
 #endif
   size_t cwd_len = strlen(cwd);
   cwd[cwd_len++] = '/';

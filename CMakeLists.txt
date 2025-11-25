@@ -19,8 +19,9 @@ elseif(WIN32)
         /Wall
         /WX
         /wd4061 # -Wno-switch
+        /wd4267 # -Wno-conversion
         /wd4456 # -Wno-shadow
-        /wd4464 # relative include path contains '..'
+        /wd4464 #  relative include path contains '..'
         /wd4668 # -Wno-undef
         /wd4820 # -Wno-padded
         /wd5045 #  Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified

@@ -72,14 +72,14 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-24.04' }}
         run: |
           sudo apt-get update
-          sudo apt-get -y install libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev
+          sudo apt-get -y install libgl1-mesa-dev libxcursor-dev libxi-dev libxinerama-dev libxrandr-dev
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
           submodules: "recursive"
       - name: Configure
-        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.mode }} -Bbuild --graphviz=build/unbox.dot || true
+        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.mode }} -Bbuild --graphviz=build/unbox.dot
       - name: Build
         run: cmake --build build --config ${{ matrix.mode }} -j
       - name: Upload debug binary
