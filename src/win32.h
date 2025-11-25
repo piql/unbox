@@ -46,6 +46,7 @@ WINBASEAPI void *WINAPI CreateFileA(
     SECURITY_ATTRIBUTES *lpSecurityAttributes, uint32_t dwCreationDisposition,
     uint32_t dwFlagsAndAttributes, void *hTemplateFile);
 WINBASEAPI int32_t WINAPI GetFileSizeEx(void *hFile, LARGE_INTEGER *lpFileSize);
+WINBASEAPI uint32_t WINAPI GetCurrentDirectoryA(uint32_t nBufferLength, char *lpBuffer);
 WINBASEAPI int32_t WINAPI CloseHandle(void *hObject);
 WINBASEAPI void *WINAPI
 CreateFileMappingA(void *hFile, SECURITY_ATTRIBUTES *lpFileMappingAttributes,

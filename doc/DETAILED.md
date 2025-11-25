@@ -239,6 +239,8 @@ are both equal to `BOXING_UNBOXER_OK` before accessing the data buffer):
 
 <!--
 ```c
+(void)extract_result;
+(void)decode_result;
 assert(extract_result == BOXING_UNBOXER_OK && decode_result == BOXING_UNBOXER_OK);
 ```
 -->

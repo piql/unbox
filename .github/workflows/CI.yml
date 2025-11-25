@@ -7,44 +7,65 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, windows-2025, macos-15]
-        mode: [debug, release]
+        mode: [Debug, Release]
         include:
           - os: ubuntu-24.04
-            mode: debug
-            build_command: ./build.c -DASAN
-            run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
-            doctest_command: ./out/exe/doc_example_program
+            mode: Debug
             artifact_name: unbox-debug-x86_64-linux
+            artifact_files: |
+              build/doc_example_program
+              build/raw_file_to_png
+              build/raw_viewer
+              build/sha1
+              build/unbox
+              build/unbox.dot
           - os: ubuntu-24.04
-            mode: release
-            build_command: ./build.c -DRELEASE
-            run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
-            doctest_command: ./out/exe/doc_example_program
+            mode: Release
             artifact_name: unbox-release-x86_64-linux
+            artifact_files: |
+              build/doc_example_program
+              build/raw_file_to_png
+              build/raw_viewer
+              build/sha1
+              build/unbox
+              build/unbox.dot
+
           - os: macos-15
-            mode: debug
-            build_command: clang build.c -o build && ./build
-            run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
-            doctest_command: ./out/exe/doc_example_program
+            mode: Debug
             artifact_name: unbox-debug-arm64-macos
+            artifact_files: |
+              build/doc_example_program
+              build/raw_file_to_png
+              build/raw_viewer
+              build/sha1
+              build/unbox
+              build/unbox.dot
+
           - os: macos-15
-            mode: release
-            build_command: clang -DRELEASE build.c -o build && ./build
-            run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
-            doctest_command: ./out/exe/doc_example_program
+            mode: Release
             artifact_name: unbox-release-arm64-macos
+            artifact_files: |
+              build/doc_example_program
+              build/raw_file_to_png
+              build/raw_viewer
+              build/sha1
+              build/unbox
+              build/unbox.dot
+
           - os: windows-2025
-            mode: debug
-            build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo -arch=x64 -host_arch=x64 && cl.exe /nologo build.c && mt.exe -nologo -manifest dev/build/UTF8.manifest -outputresource:build.exe;#1 && build.exe"
-            run_command: out/exe/unbox.exe dep/ivm_testdata/reel/png out/data
-            doctest_command: out/exe/doc_example_program.exe
+            mode: Debug
             artifact_name: unbox-debug-x86_64-win32
+            artifact_files: |
+              build/*.exe
+              build/*.pdb
+
           - os: windows-2025
-            mode: release
-            build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo -arch=x64 -host_arch=x64 && cl.exe /nologo -DRELEASE build.c && mt.exe -nologo -manifest dev/build/UTF8.manifest -outputresource:build.exe;#1 && build.exe"
-            run_command: out/exe/unbox.exe dep/ivm_testdata/reel/png out/data
-            doctest_command: out/exe/doc_example_program.exe
+            mode: Release
             artifact_name: unbox-release-x86_64-win32
+            artifact_files: |
+              build/*.exe
+              build/*.pdb
+
     runs-on: ${{ matrix.os }}
     steps:
       - name: X11 development libraries
@@ -57,14 +78,14 @@ jobs:
         with:
           fetch-depth: 1
           submodules: "recursive"
+      - name: Configure
+        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.mode }} -Bbuild --graphviz=build/unbox.dot
       - name: Build
-        run: ${{ matrix.build_command }}
+        run: cmake --build build --config ${{ matrix.mode }} -j
       - name: Upload debug binary
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: out/exe/*
+          path: ${{ matrix.artifact_files }}
       - name: Test
-        run: ${{ matrix.run_command }}
-      - name: Doc Test
-        run: ${{ matrix.doctest_command }}
+        run: ctest --test-dir build -j2 --verbose

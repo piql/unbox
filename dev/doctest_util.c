@@ -1,5 +1,4 @@
 #include "../src/map_file.c"
-#include "build/unboxing.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -47,4 +46,29 @@ bool nextCodeLine(MarkdownCodeBlockIteratorC *it, Slice *code_line) {
       it->in_code_block = true;
   }
   return false;
+}
+
+bool markdownToC(const char *const markdownInputFile,
+                 const char *const cOutputFile) {
+  Slice doc = mapFile(markdownInputFile);
+  if (!doc.data)
+    return false;
+  FILE *c = fopen(cOutputFile, "wb");
+  if (!c) {
+    unmapFile(doc);
+    return false;
+  }
+  MarkdownCodeBlockIteratorC it = {.lit = {.data = doc}};
+  Slice line;
+  while (nextCodeLine(&it, &line)) {
+    if (fwrite(line.data, 1, line.size, c) < line.size ||
+        fputc('\n', c) == EOF) {
+      fclose(c);
+      unmapFile(doc);
+      return false;
+    }
+  }
+  fclose(c);
+  unmapFile(doc);
+  return true;
 }

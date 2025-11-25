@@ -75,10 +75,15 @@ int main(int argc, char **argv) {
   Shader invertShader = LoadShaderFromMemory(NULL, invertFragmentShader);
   if (!IsShaderValid(invertShader)) {
     fprintf(stderr, "Failed to load shader\n");
+    CloseWindow();
+    unmapFile(file);
+    free(positions.data);
+    free(image.data);
     return EXIT_FAILURE;
   }
   Texture2D tex = {0};
   bool user_quit = false;
+  int exit_code = EXIT_SUCCESS;
   while (!WindowShouldClose()) {
     screenWidth = GetScreenWidth();
     screenHeight = GetScreenHeight();
@@ -132,7 +137,8 @@ int main(int argc, char **argv) {
         } else {
           ToggleFullscreen();
           SetWindowSize(non_fullscreen_width, non_fullscreen_height);
-          SetWindowPosition((int)non_fullscreen_position.x, (int)non_fullscreen_position.y);
+          SetWindowPosition((int)non_fullscreen_position.x,
+                            (int)non_fullscreen_position.y);
         }
         screenWidth = GetScreenWidth();
         screenHeight = GetScreenHeight();
@@ -157,12 +163,8 @@ int main(int argc, char **argv) {
       if (!splat_pixels(data, header->frame_width, header->frame_height,
                         header->color_depth, &image)) {
         fprintf(stderr, "Failed to splat pixels\n");
-        UnloadTexture(tex);
-        CloseWindow();
-        unmapFile(file);
-        free(positions.data);
-        free(image.data);
-        return EXIT_FAILURE;
+        exit_code = EXIT_FAILURE;
+        break;
       }
       image_width = header->frame_width;
       image_height = header->frame_height;
@@ -205,9 +207,10 @@ int main(int argc, char **argv) {
     EndDrawing();
   }
   UnloadTexture(tex);
+  UnloadShader(invertShader);
   CloseWindow();
   unmapFile(file);
   free(positions.data);
   free(image.data);
-  return EXIT_SUCCESS;
+  return exit_code;
 }

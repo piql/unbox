@@ -5,9 +5,10 @@
 int main(int argc, char *argv[]) {
   afs_hash1_state h;
   unsigned char digest[20];
-  char digest_str[40];
+  char digest_str[41];
   if (argc == 1) {
     int r = afs_sha1_init(&h);
+    (void)r; // Only used in asserts
     assert(r == CRYPT_OK);
     unsigned char buf[64];
     for (;;) {
@@ -31,6 +32,7 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
   }
   int r = afs_sha1_init(&h);
+  (void)r; // Only used in asserts
   assert(r == CRYPT_OK);
   for (int i = 1; i < argc; i++) {
     Slice file = mapFile(argv[i]);
