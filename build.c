@@ -26,10 +26,14 @@ exit $?
 #include <sys/stat.h>
 
 #ifdef _WIN32
-#define CC "cl.exe /nologo"
+#ifdef RELEASE
+#define CC "cl.exe /nologo /MP /MT /O2"
+#else
+#define CC "cl.exe /nologo /MP /MT /RTC1"
+#endif
 #define CC_DEFINES " -DWIN32 -D_CRT_NO_POSIX_ERROR_CODES"
 #define CFLAGS                                                                 \
-  " /guard:cf /permissive- /RTC1 /sdl /std:c11 /utf-8 /validate-charset /MP"       \
+  " /guard:cf /permissive- /sdl /std:c11 /utf-8 /validate-charset"             \
   " /Wall /WX /wd4464 /wd4668 /wd4820 /wd4996 /wd5045 /Zi"                     \
   " /wd4061"                                                                   \
   " /wd4127"                                                                   \
@@ -41,7 +45,9 @@ exit $?
   " /wd4267"                                                                   \
   " /wd4456"                                                                   \
   " /wd4701"                                                                   \
-  " /wd4703"
+  " /wd4703"                                                                   \
+  " /wd4710"                                                                   \
+  " /wd4711"
 #define TARGET_WINDOWS
 #elif defined(__APPLE__)
 #define CC "clang"
@@ -199,29 +205,32 @@ int main(int argc, char *argv[]) {
   }
 
   { // Set up raw viewer
-#ifdef _WIN32
-    SYSTEM_WITH_LOG("cd dep/raylib && cmake -Bbuild");
 #ifdef RELEASE
-    SYSTEM_WITH_LOG("cd dep/raylib && cmake --build build --config Release "
-                    "--target raylib -j");
-#define RAYLIB_LIB_PATH "dep/raylib/build/raylib/Release/raylib.lib"
+#define CMAKE_BUILD_TYPE "Release"
 #else
-    SYSTEM_WITH_LOG("cd dep/raylib && cmake --build build --config Debug "
-                    "--target raylib -j");
-#define RAYLIB_LIB_PATH "dep/raylib/build/raylib/Debug/raylib.lib"
+#define CMAKE_BUILD_TYPE "Debug"
+#endif
+    SYSTEM_WITH_LOG("cd dep/raylib && cmake "
+                    "-DCMAKE_BUILD_TYPE=" CMAKE_BUILD_TYPE " -Bbuild");
+    SYSTEM_WITH_LOG(
+        "cd dep/raylib && cmake --build build --config " CMAKE_BUILD_TYPE
+        " --target raylib -j");
+#ifdef _WIN32
+#ifdef RELEASE
+
+#if _MSC_VER >= 1950
+#define RAYLIB_LIB_PATH "dep/raylib/build/raylib/raylib.lib"
+#else
+#define RAYLIB_LIB_PATH                                                        \
+  "dep/raylib/build/raylib/" CMAKE_BUILD_TYPE "/raylib.lib"
+#endif
 #endif
 #define RAW_VIEWER_SOURCES                                                     \
-  " gdi32.lib msvcrt.lib " RAYLIB_LIB_PATH                                    \
+  " gdi32.lib " RAYLIB_LIB_PATH                                                \
   " winmm.lib user32.lib shell32.lib dev/raw_viewer.c"
 #define RAW_VIEWER_LFLAGS " /NODEFAULTLIB:LIBCMT"
 #else
-#ifdef RELEASE
-    SYSTEM_WITH_LOG(
-        "cd dep/raylib && cmake -DCMAKE_BUILD_TYPE=Release -Bbuild");
-#else
-    SYSTEM_WITH_LOG("cd dep/raylib && cmake -DCMAKE_BUILD_TYPE=Debug -Bbuild");
-#endif
-    SYSTEM_WITH_LOG("cd dep/raylib && cmake --build build --target raylib -j");
+
 #define RAYLIB_LIB_PATH "dep/raylib/build/raylib/libraylib.a"
 #define RAW_VIEWER_SOURCES " dev/raw_viewer.c " RAYLIB_LIB_PATH
 #define RAW_VIEWER_LFLAGS " -lm"
@@ -230,8 +239,7 @@ int main(int argc, char *argv[]) {
 
   { // Generate doc example program
     Slice doc = mapFile("doc/DETAILED.md");
-    MarkdownCodeBlockIteratorC it = {.lit = {.data = doc, .i = 0},
-                                     .in_code_block = false};
+    MarkdownCodeBlockIteratorC it = {.lit = {.data = doc}};
     size_t n = 0;
     Slice line;
     FILE *c = fopen("dev/doc_example_program.c", "wb");

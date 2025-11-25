@@ -7,18 +7,40 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, windows-2025, macos-15]
+        mode: [debug, release]
         include:
           - os: ubuntu-24.04
+            mode: debug
             build_command: ./build.c -DASAN
             run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
             doctest_command: ./out/exe/doc_example_program
             artifact_name: unbox-debug-x86_64-linux
+          - os: ubuntu-24.04
+            mode: release
+            build_command: ./build.c -DRELEASE
+            run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
+            doctest_command: ./out/exe/doc_example_program
+            artifact_name: unbox-release-x86_64-linux
           - os: macos-15
+            mode: debug
             build_command: clang build.c -o build && ./build
             run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
             doctest_command: ./out/exe/doc_example_program
             artifact_name: unbox-debug-arm64-macos
+          - os: macos-15
+            mode: release
+            build_command: clang -DRELEASE build.c -o build && ./build
+            run_command: ./out/exe/unbox dep/ivm_testdata/reel/png out/data
+            doctest_command: ./out/exe/doc_example_program
+            artifact_name: unbox-release-arm64-macos
           - os: windows-2025
+            mode: debug
+            build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo -arch=x64 -host_arch=x64 && cl.exe /nologo build.c && mt.exe -nologo -manifest dev/build/UTF8.manifest -outputresource:build.exe;#1 && build.exe"
+            run_command: out/exe/unbox.exe dep/ivm_testdata/reel/png out/data
+            doctest_command: out/exe/doc_example_program.exe
+            artifact_name: unbox-debug-x86_64-win32
+          - os: windows-2025
+            mode: release
             build_command: cmd.exe /c """C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat"" -no_logo -arch=x64 -host_arch=x64 && cl.exe /nologo -DRELEASE build.c && mt.exe -nologo -manifest dev/build/UTF8.manifest -outputresource:build.exe;#1 && build.exe"
             run_command: out/exe/unbox.exe dep/ivm_testdata/reel/png out/data
             doctest_command: out/exe/doc_example_program.exe
