@@ -12,7 +12,7 @@ typedef union {
   struct {
     uint32_t LowPart;
     int32_t HighPart;
-  };
+  } u;
   int64_t QuadPart;
 } LARGE_INTEGER;
 

@@ -2,7 +2,7 @@
 #include "doctest_util.c"
 
 #ifdef _WIN32
-#include "win32.h"
+#include "../src/win32.h"
 #else
 #include <unistd.h>
 #endif

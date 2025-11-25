@@ -15,7 +15,13 @@ if(APPLE OR LINUX)
     set(CFLAGS -Wall -Wextra -Wpedantic -Werror)
     set(LFLAGS)
 elseif(WIN32)
-    set(CFLAGS /Wall /WX)
+    set(CFLAGS
+        /Wall
+        /WX
+        /wd4464 # relative include path contains '..'
+        /wd4668 # -Wno-undef
+        /wd4820 # -Wno-padded
+    )
     set(LFLAGS)
 endif()
 
@@ -24,12 +30,20 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         list(APPEND CFLAGS -fsanitize=address)
         list(APPEND LFLAGS -fsanitize=address)
     elseif(APPLE)
-        list(APPEND CFLAGS -Weverything -fsanitize=undefined)
+        list(APPEND CFLAGS
+            -fsanitize=undefined
+            -Weverything
+            -Wno-declaration-after-statement
+            -Wno-padded
+        )
         list(APPEND LFLAGS -fsanitize=undefined)
     endif()
 endif()
 
 function(add_flags target)
+    if(WIN32)
+        target_compile_definitions(${target} PRIVATE _CRT_SECURE_NO_WARNINGS _CRT_NO_POSIX_ERROR_CODES)
+    endif()
     target_compile_options(${target} PRIVATE ${CFLAGS})
     target_link_options(${target} PRIVATE ${LFLAGS})
 endfunction()

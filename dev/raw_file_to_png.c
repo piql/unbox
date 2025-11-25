@@ -163,7 +163,7 @@ void *frameGeneratorWorker(PendingFrameGenerationJobList *job_list) {
 
       FrameGenerationJob jobs[16];
       uint16_t jobs_left = job_list->count - job_list->offset;
-      uint8_t count = min(countof(jobs), jobs_left);
+      uint8_t count = (uint8_t)min(countof(jobs), jobs_left);
       memcpy(jobs, (FrameGenerationJob *)job_list->jobs.data + job_list->offset,
              sizeof *jobs * count);
       job_list->offset += count;
@@ -326,7 +326,7 @@ int main(int argc, char *argv[]) {
           assert(header->color_depth == 8);
         boxing_math_crc64_calc_crc(crc, (const char *)header,
                                    sizeof *header + frame_size +
-                                       sizeof *footer - 8);
+                                       (unsigned)(sizeof *footer - 8));
         uint64_t checksum = boxing_math_crc64_get_crc(crc);
 
         boxing_math_crc64_reset(crc, 0);
@@ -371,7 +371,7 @@ int main(int argc, char *argv[]) {
         snprintf(job->output_path, sizeof job->output_path,
                  "%s/%05" PRIu64 ".%s", folder_path, header->frame_id,
                  job_kind == JOB_GENERATE_PNG ? "png" : "raw");
-        job->frame_id = header->frame_id;
+        job->frame_id = (uint16_t)header->frame_id;
         job->header_data = header;
         job->frame_data = data;
         job->footer_data = footer;

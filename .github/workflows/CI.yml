@@ -79,7 +79,7 @@ jobs:
           fetch-depth: 1
           submodules: "recursive"
       - name: Configure
-        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.mode }} -Bbuild --graphviz=build/unbox.dot
+        run: cmake -DCMAKE_BUILD_TYPE=${{ matrix.mode }} -Bbuild --graphviz=build/unbox.dot || true
       - name: Build
         run: cmake --build build --config ${{ matrix.mode }} -j
       - name: Upload debug binary

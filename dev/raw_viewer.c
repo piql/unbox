@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
     int c = GetCharPressed();
     while (c != '\0') {
       if (c >= '0' && c <= '9' && search_idx < sizeof search - 1) {
-        search[search_idx++] = c;
+        search[search_idx++] = (char)c;
         search[search_idx] = '\0';
       }
       c = GetCharPressed();

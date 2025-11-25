@@ -8,7 +8,7 @@ typedef struct {
   size_t i;
 } LineIterator;
 
-bool nextLine(LineIterator *it, Slice *line) {
+static bool nextLine(LineIterator *it, Slice *line) {
   if (it->i >= it->data.size)
     return false;
   size_t i;
@@ -30,7 +30,7 @@ typedef struct {
   bool in_code_block;
 } MarkdownCodeBlockIteratorC;
 
-bool nextCodeLine(MarkdownCodeBlockIteratorC *it, Slice *code_line) {
+static bool nextCodeLine(MarkdownCodeBlockIteratorC *it, Slice *code_line) {
   Slice line;
   while (nextLine(&it->lit, &line)) {
     if (line.size > 0 && ((char *)line.data)[line.size - 1] == '\r')
@@ -48,7 +48,7 @@ bool nextCodeLine(MarkdownCodeBlockIteratorC *it, Slice *code_line) {
   return false;
 }
 
-bool markdownToC(const char *const markdownInputFile,
+static bool markdownToC(const char *const markdownInputFile,
                  const char *const cOutputFile) {
   Slice doc = mapFile(markdownInputFile);
   if (!doc.data)
