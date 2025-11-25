@@ -207,7 +207,7 @@ int main(int argc, char *argv[]) {
     char cachefile_path[4096];
     snprintf(cachefile_path, sizeof cachefile_path,
              "%s/control_frame_%" PRIx64 ".xml", output_folder, crc);
-    mkdir(output_folder, 0755);
+    ensurePathExists(output_folder);
     writeEntireFile(cachefile_path, control_frame_contents);
     afs_control_data *ctl = afs_control_data_create();
     if (afs_control_data_load_string(

@@ -100,8 +100,8 @@ set_property(SOURCE dev/metagen.c APPEND PROPERTY COMPILE_DEFINITIONS INCLUDES=$
 add_flags(metagen)
 
 add_custom_command(OUTPUT
-    "${CMAKE_CURRENT_SOURCE_DIR}/dev/doc_example_program.c"
     "${CMAKE_CURRENT_SOURCE_DIR}/.vscode/c_cpp_properties.json"
+    "${CMAKE_CURRENT_SOURCE_DIR}/dev/doc_example_program.c"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     COMMAND metagen
     DEPENDS doc/DETAILED.md
