@@ -88,4 +88,4 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_files }}
       - name: Test
-        run: ctest --test-dir build -j2 --verbose
+        run: ctest --test-dir build -j2 --verbose -C ${{ matrix.mode }}
