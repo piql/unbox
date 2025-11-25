@@ -23,6 +23,8 @@ elseif(WIN32)
         /wd4456 # -Wno-shadow
         /wd4464 #  relative include path contains '..'
         /wd4668 # -Wno-undef
+        /wd4710 # function not inlined
+        /wd4711 # function selected for automatic inline expansion
         /wd4820 # -Wno-padded
         /wd5045 #  Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
     )
