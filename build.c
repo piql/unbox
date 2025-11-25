@@ -29,7 +29,7 @@ exit $?
 #define CC "cl.exe /nologo"
 #define CC_DEFINES " -DWIN32 -D_CRT_NO_POSIX_ERROR_CODES"
 #define CFLAGS                                                                 \
-  " /guard:cf /permissive- /RTC1 /sdl /std:c11 /utf-8 /validate-charset /MP /MTd"       \
+  " /guard:cf /permissive- /RTC1 /sdl /std:c11 /utf-8 /validate-charset /MP"       \
   " /Wall /WX /wd4464 /wd4668 /wd4820 /wd4996 /wd5045 /Zi"                     \
   " /wd4061"                                                                   \
   " /wd4127"                                                                   \
@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
 #define RAYLIB_LIB_PATH "dep/raylib/build/raylib/Debug/raylib.lib"
 #endif
 #define RAW_VIEWER_SOURCES                                                     \
-  " gdi32.lib msvcrtd.lib " RAYLIB_LIB_PATH                                    \
+  " gdi32.lib msvcrt.lib " RAYLIB_LIB_PATH                                    \
   " winmm.lib user32.lib shell32.lib dev/raw_viewer.c"
 #define RAW_VIEWER_LFLAGS " /NODEFAULTLIB:LIBCMT"
 #else
