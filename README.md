@@ -11,8 +11,6 @@ frames.
     of contents.
   - `ivm_testdata` - Not required by the project, but included for a sample
     folder of piqlFilm PNG images for testing.
-  - `rpmalloc` - Only used for release builds to improve the performance of
-    `malloc()` and friends (~3% from my tests).
   - `stb` - `stb_image.h` used by unbox for image file reading.
     `stb_image_write.h` used by raw_file_to_png for image file writing.
   - `unboxing` - Decoding library for the boxing barcode format.

@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
         } else {
           ToggleFullscreen();
           SetWindowSize(non_fullscreen_width, non_fullscreen_height);
-          SetWindowPosition(non_fullscreen_position.x, non_fullscreen_position.y);
+          SetWindowPosition((int)non_fullscreen_position.x, (int)non_fullscreen_position.y);
         }
         screenWidth = GetScreenWidth();
         screenHeight = GetScreenHeight();

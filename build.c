@@ -132,7 +132,6 @@ exit $?
 
 #include "dev/build/afs.h"
 #include "dev/build/mxml.h"
-#include "dev/build/rpmalloc.h"
 #include "dev/build/unboxing.h"
 
 #define SYSTEM_WITH_LOG(cmd)                                                   \
@@ -143,11 +142,7 @@ exit $?
 #define DEFINES CC_DEFINES UNBOXING_DEFINES
 #define INCLUDES UNBOXING_INCLUDES AFS_INCLUDES MXML_INCLUDES
 #define LFLAGS UNBOXING_LFLAGS
-#if defined(RELEASE) && !defined(TARGET_WINDOWS)
-#define SOURCES RPMALLOC_SOURCES UNBOXING_SOURCES AFS_SOURCES MXML_SOURCES
-#else
 #define SOURCES UNBOXING_SOURCES AFS_SOURCES MXML_SOURCES
-#endif
 
 #ifdef _WIN32
 #define COMPILE(cc, defines, includes, sources, output, cflags, lflags)        \
@@ -216,14 +211,11 @@ int main(int argc, char *argv[]) {
         "cd dep/raylib && cmake --build build --config " CMAKE_BUILD_TYPE
         " --target raylib -j");
 #ifdef _WIN32
-#ifdef RELEASE
-
 #if _MSC_VER >= 1950
 #define RAYLIB_LIB_PATH "dep/raylib/build/raylib/raylib.lib"
 #else
 #define RAYLIB_LIB_PATH                                                        \
   "dep/raylib/build/raylib/" CMAKE_BUILD_TYPE "/raylib.lib"
-#endif
 #endif
 #define RAW_VIEWER_SOURCES                                                     \
   " gdi32.lib " RAYLIB_LIB_PATH                                                \
