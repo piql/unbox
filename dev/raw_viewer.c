@@ -84,6 +84,9 @@ int main(int argc, char **argv) {
   Texture2D tex = {0};
   bool user_quit = false;
   int exit_code = EXIT_SUCCESS;
+  float fixed_scale = 1;
+  bool use_fixed_scale = false;
+  Vector2 pan = {0, 0};
   while (!WindowShouldClose()) {
     screenWidth = GetScreenWidth();
     screenHeight = GetScreenHeight();
@@ -98,6 +101,24 @@ int main(int argc, char **argv) {
       if (c >= '0' && c <= '9' && search_idx < sizeof search - 1) {
         search[search_idx++] = (char)c;
         search[search_idx] = '\0';
+      }
+      float natural_scale = min((float)screenWidth / (float)tex.width,
+                                (float)screenHeight / (float)tex.height);
+      if (c == '+') {
+        if (!use_fixed_scale)
+          fixed_scale = natural_scale;
+        fixed_scale = clamp(fixed_scale + (0.1 * fixed_scale), 0.1, 100);
+        use_fixed_scale = true;
+      }
+      if (c == '-') {
+        if (!use_fixed_scale)
+          fixed_scale = natural_scale;
+        fixed_scale = clamp(fixed_scale - (0.1 * fixed_scale), 0.1, 100);
+        if (fixed_scale < natural_scale) {
+          fixed_scale = natural_scale;
+          use_fixed_scale = false;
+        } else
+          use_fixed_scale = true;
       }
       c = GetCharPressed();
     }
@@ -142,6 +163,9 @@ int main(int argc, char **argv) {
         }
         screenWidth = GetScreenWidth();
         screenHeight = GetScreenHeight();
+      } else if (k == KEY_R) {
+        use_fixed_scale = false;
+        pan = (Vector2){0, 0};
       }
       k = GetKeyPressed();
     }
@@ -155,7 +179,7 @@ int main(int argc, char **argv) {
 
     Image img;
 
-    if (current_position != next_position && positions.data) {
+    if ((tex.id == 0 || current_position != next_position) && positions.data) {
       current_position = next_position;
       size_t pos = ((size_t *)positions.data)[current_position];
       const RawFileHeader *const header = (const RawFileHeader *)pos;
@@ -178,16 +202,41 @@ int main(int argc, char **argv) {
       UnloadTexture(tex);
       tex = LoadTextureFromImage(img);
       GenTextureMipmaps(&tex);
-      SetTextureFilter(tex, TEXTURE_FILTER_TRILINEAR);
     }
+
+    float mousewheel = GetMouseWheelMove();
+    if (mousewheel < -0.001 || mousewheel > 0.001) {
+      float natural_scale = min((float)screenWidth / (float)tex.width,
+                                (float)screenHeight / (float)tex.height);
+      if (!use_fixed_scale)
+        fixed_scale = natural_scale;
+      fixed_scale =
+          clamp(fixed_scale + ((0.1 * mousewheel) * fixed_scale), 0.1, 100);
+      use_fixed_scale = true;
+      if (fixed_scale < natural_scale) {
+        fixed_scale = natural_scale;
+        use_fixed_scale = false;
+      }
+    }
+
+    Vector2 mousemove = GetMouseDelta();
+    if ((mousemove.x || mousemove.y) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+      fprintf(stderr, "move x: %f, y: %f\n", mousemove.x, mousemove.y);
+      pan.x += mousemove.x;
+      pan.y += mousemove.y;
+    }
+
     BeginDrawing();
     ClearBackground(RAYWHITE);
     if (positions.data) {
-      float tex_scale = min((float)screenWidth / (float)tex.width,
-                            (float)screenHeight / (float)tex.height);
+      float natural_scale = min((float)screenWidth / (float)tex.width,
+                                (float)screenHeight / (float)tex.height);
+      float tex_scale = use_fixed_scale ? fixed_scale : natural_scale;
+      SetTextureFilter(tex, use_fixed_scale ? TEXTURE_FILTER_POINT
+                                            : TEXTURE_FILTER_TRILINEAR);
       Vector2 offset = {
-          .x = (screenWidth - tex.width * tex_scale) / 2,
-          .y = (screenHeight - tex.height * tex_scale) / 2,
+          .x = ((screenWidth - tex.width * tex_scale) / 2) + pan.x,
+          .y = ((screenHeight - tex.height * tex_scale) / 2) + pan.y,
       };
       if (invert)
         BeginShaderMode(invertShader);
