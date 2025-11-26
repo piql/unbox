@@ -13,20 +13,16 @@ frames.
     folder of piqlFilm PNG images for testing.
   - `stb` - `stb_image.h` used by unbox for image file reading.
     `stb_image_write.h` used by raw_file_to_png for image file writing.
-  - `unboxing` - Decoding library for the boxing barcode format.
 - `dev` - Auxillary development tools, code and files.
-  - `build` - Auxillary code for `build.c`.
+  - `build` - Auxillary build code.
 - `out` - Output files of various kinds.
-  - `exe` - Built binaries by the project.
 - `src` - Project source code.
-- `build.c` - Project build script.
 
 ## Building
 
 ```sh
-./build.c # or
-cc -o build build.c && ./build
-./build.c -DRELEASE
+cmake -Bbuild
+cmake --build build -j
 ```
 
 <!--
