@@ -13,6 +13,8 @@
 #endif
 #define clamp(x, lo, hi) ((x) < (lo) ? (lo) : (hi) < (x) ? (hi) : (x))
 #define countof(x) (sizeof(x) / sizeof *(x))
+#define absolute_float(x) ((x) < 0 ? -(x) : (x))
+#define nonzeroish_float(x) (absolute_float(x) > 1e-6f)
 
 #include <stddef.h>
 

@@ -107,13 +107,13 @@ int main(int argc, char **argv) {
       if (c == '+') {
         if (!use_fixed_scale)
           fixed_scale = natural_scale;
-        fixed_scale = clamp(fixed_scale + (0.1 * fixed_scale), 0.1, 100);
+        fixed_scale = clamp(fixed_scale + (0.1f * fixed_scale), 0.1f, 100);
         use_fixed_scale = true;
       }
       if (c == '-') {
         if (!use_fixed_scale)
           fixed_scale = natural_scale;
-        fixed_scale = clamp(fixed_scale - (0.1 * fixed_scale), 0.1, 100);
+        fixed_scale = clamp(fixed_scale - (0.1f * fixed_scale), 0.1f, 100);
         if (fixed_scale < natural_scale) {
           fixed_scale = natural_scale;
           use_fixed_scale = false;
@@ -205,13 +205,13 @@ int main(int argc, char **argv) {
     }
 
     float mousewheel = GetMouseWheelMove();
-    if (mousewheel < -0.001 || mousewheel > 0.001) {
+    if (nonzeroish_float(mousewheel)) {
       float natural_scale = min((float)screenWidth / (float)tex.width,
                                 (float)screenHeight / (float)tex.height);
       if (!use_fixed_scale)
         fixed_scale = natural_scale;
       fixed_scale =
-          clamp(fixed_scale + ((0.1 * mousewheel) * fixed_scale), 0.1, 100);
+          clamp(fixed_scale + ((0.1f * mousewheel) * fixed_scale), 0.1f, 100);
       use_fixed_scale = true;
       if (fixed_scale < natural_scale) {
         fixed_scale = natural_scale;
@@ -220,8 +220,8 @@ int main(int argc, char **argv) {
     }
 
     Vector2 mousemove = GetMouseDelta();
-    if ((mousemove.x || mousemove.y) && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-      fprintf(stderr, "move x: %f, y: %f\n", mousemove.x, mousemove.y);
+    if ((nonzeroish_float(mousemove.x) || nonzeroish_float(mousemove.y)) &&
+        IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
       pan.x += mousemove.x;
       pan.y += mousemove.y;
     }
