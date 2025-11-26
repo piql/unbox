@@ -95,6 +95,8 @@ int main(int argc, char **argv) {
       non_fullscreen_height = screenHeight;
       non_fullscreen_position = GetWindowPosition();
     }
+    float natural_scale = min((float)screenWidth / (float)tex.width,
+                              (float)screenHeight / (float)tex.height);
 
     int c = GetCharPressed();
     while (c != '\0') {
@@ -102,8 +104,6 @@ int main(int argc, char **argv) {
         search[search_idx++] = (char)c;
         search[search_idx] = '\0';
       }
-      float natural_scale = min((float)screenWidth / (float)tex.width,
-                                (float)screenHeight / (float)tex.height);
       if (c == '+') {
         if (!use_fixed_scale)
           fixed_scale = natural_scale;
@@ -114,11 +114,7 @@ int main(int argc, char **argv) {
         if (!use_fixed_scale)
           fixed_scale = natural_scale;
         fixed_scale = clamp(fixed_scale - (0.1f * fixed_scale), 0.1f, 100);
-        if (fixed_scale < natural_scale) {
-          fixed_scale = natural_scale;
-          use_fixed_scale = false;
-        } else
-          use_fixed_scale = true;
+        use_fixed_scale = true;
       }
       c = GetCharPressed();
     }
@@ -202,21 +198,22 @@ int main(int argc, char **argv) {
       UnloadTexture(tex);
       tex = LoadTextureFromImage(img);
       GenTextureMipmaps(&tex);
+      natural_scale = min((float)screenWidth / (float)tex.width,
+                          (float)screenHeight / (float)tex.height);
     }
 
     float mousewheel = GetMouseWheelMove();
     if (nonzeroish_float(mousewheel)) {
-      float natural_scale = min((float)screenWidth / (float)tex.width,
-                                (float)screenHeight / (float)tex.height);
       if (!use_fixed_scale)
         fixed_scale = natural_scale;
       fixed_scale =
           clamp(fixed_scale + ((0.1f * mousewheel) * fixed_scale), 0.1f, 100);
       use_fixed_scale = true;
-      if (fixed_scale < natural_scale) {
-        fixed_scale = natural_scale;
-        use_fixed_scale = false;
-      }
+    }
+
+    if (fixed_scale < natural_scale) {
+      fixed_scale = natural_scale;
+      use_fixed_scale = false;
     }
 
     Vector2 mousemove = GetMouseDelta();
@@ -229,8 +226,6 @@ int main(int argc, char **argv) {
     BeginDrawing();
     ClearBackground(RAYWHITE);
     if (positions.data) {
-      float natural_scale = min((float)screenWidth / (float)tex.width,
-                                (float)screenHeight / (float)tex.height);
       float tex_scale = use_fixed_scale ? fixed_scale : natural_scale;
       SetTextureFilter(tex, use_fixed_scale ? TEXTURE_FILTER_POINT
                                             : TEXTURE_FILTER_TRILINEAR);
@@ -250,8 +245,21 @@ int main(int argc, char **argv) {
           char pos[32];
           snprintf(pos, sizeof pos, "%zu\n", current_position);
           DrawText(pos, 0, 0, 64, GRAY);
+          if (current_position == 0) {
+            const char *const help_text = "Q - quit\n"
+                                          "+ - zoom in\n"
+                                          "- - zoom out\n"
+                                          "R - reset zoom\n"
+                                          "H - toggle text\n"
+                                          "I - invert image\n"
+                                          "F - fullscreen\n";
+            DrawText(help_text, 0, 128, 48, GRAY);
+          }
         }
       }
+    } else {
+      DrawText("Run this program with\na reel.raw file argument\n\nraw_viewer reel.raw", 0, 0, 64,
+               GRAY);
     }
     EndDrawing();
   }
