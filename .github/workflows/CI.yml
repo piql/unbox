@@ -18,7 +18,7 @@ jobs:
               build/raw_viewer
               build/sha1
               build/unbox
-              build/unbox.dot
+              build/unbox.dot*
           - os: ubuntu-24.04
             mode: Release
             artifact_name: unbox-release-x86_64-linux
@@ -28,7 +28,7 @@ jobs:
               build/raw_viewer
               build/sha1
               build/unbox
-              build/unbox.dot
+              build/unbox.dot*
 
           - os: macos-15
             mode: Debug
@@ -39,7 +39,7 @@ jobs:
               build/raw_viewer
               build/sha1
               build/unbox
-              build/unbox.dot
+              build/unbox.dot*
 
           - os: macos-15
             mode: Release
@@ -50,21 +50,21 @@ jobs:
               build/raw_viewer
               build/sha1
               build/unbox
-              build/unbox.dot
+              build/unbox.dot*
 
           - os: windows-2025
             mode: Debug
             artifact_name: unbox-debug-x86_64-win32
             artifact_files: |
-              build/*.exe
-              build/*.pdb
+              build/Debug/*
+              build/unbox.dot*
 
           - os: windows-2025
             mode: Release
             artifact_name: unbox-release-x86_64-win32
             artifact_files: |
-              build/*.exe
-              build/*.pdb
+              build/Release/*
+              build/unbox.dot*
 
     runs-on: ${{ matrix.os }}
     steps:
