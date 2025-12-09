@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
         next_position--;
       else if (k == KEY_RIGHT && next_position + 1 < positions.size)
         next_position++;
-      else if (k == KEY_BACKSPACE)
+      else if (k == KEY_BACKSPACE && search_idx != 0)
         search[--search_idx] = '\0';
       else if (k == KEY_ENTER && search_idx != 0) {
         errno = 0;
